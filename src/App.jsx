@@ -7,6 +7,7 @@ import Analytics from "./pages/Analytics";
 import DailyUpdate from "./pages/DailyUpdate";
 import LinkedinUpdate from "./pages/LinkedinUpdate";
 import Login from "./pages/Login";
+import Test from "./pages/Test";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/daily-update" element={<DailyUpdate />} />
         <Route path="/linkedin-update" element={<LinkedinUpdate />} />
+        <Route path="/test" element={<Test />} />
       </Routes>
     </BrowserRouter>
   );
