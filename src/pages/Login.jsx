@@ -22,14 +22,6 @@ function Login() {
 
   const handleLogin = async () => {
 
-    if (!email || !password) {
-
-      alert("Fill all fields");
-
-      return;
-
-    }
-
     try {
 
       setLoading(true);
@@ -52,12 +44,15 @@ function Login() {
 
       if (loginError) {
 
+        console.log(loginError);
+
         alert(loginError.message);
 
         return;
 
       }
 
+      console.log("LOGIN SUCCESS");
       console.log(loginData);
 
       // FETCH ROLE
@@ -70,11 +65,13 @@ function Login() {
 
       } = await supabase
         .from("users")
-        .select("role")
-        .eq("email", email)
-        .limit(1);
+        .select("*")
+        .eq("email", email);
 
+      console.log("ROLE DATA");
       console.log(roleData);
+
+      console.log("ROLE ERROR");
       console.log(roleError);
 
       if (
@@ -82,7 +79,9 @@ function Login() {
         roleData.length === 0
       ) {
 
-        alert("Role not found");
+        alert(
+          "No role found"
+        );
 
         return;
 
@@ -91,7 +90,10 @@ function Login() {
       const role =
         roleData[0].role;
 
-      // STORE ROLE
+      console.log("ROLE:");
+      console.log(role);
+
+      // SAVE ROLE
 
       localStorage.setItem(
         "userRole",
@@ -124,7 +126,9 @@ function Login() {
 
       else {
 
-        alert("Invalid role");
+        alert(
+          "Invalid role"
+        );
 
       }
 

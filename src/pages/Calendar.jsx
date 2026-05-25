@@ -5,37 +5,33 @@ import {
 
 } from "react";
 
-import Calendar
-from "react-calendar";
-
-import "react-calendar/dist/Calendar.css";
-
 import { supabase }
 from "../services/supabase";
 
 function CalendarPage() {
 
-  const [selectedDate,
-    setSelectedDate] =
+  const [selectedDay,
+    setSelectedDay] =
       useState(null);
 
   const [taskSummary,
     setTaskSummary] =
       useState("");
 
-  const [blockers,
-    setBlockers] =
-      useState("");
-
-  const [progress,
-    setProgress] =
-      useState("");
-
   const [submissions,
     setSubmissions] =
       useState([]);
 
-  // FETCH ALL SUBMISSIONS
+  const today =
+    new Date();
+
+  const currentMonth =
+    today.getMonth();
+
+  const currentYear =
+    today.getFullYear();
+
+  // FETCH SUBMISSIONS
 
   useEffect(() => {
 
@@ -48,20 +44,13 @@ function CalendarPage() {
 
       const {
 
-        data,
-        error
+        data
 
       } = await supabase
         .from("daily_updates")
         .select("*");
 
-      if (error) {
-
-        console.log(error);
-
-      }
-
-      else {
+      if (data) {
 
         setSubmissions(data);
 
@@ -69,83 +58,101 @@ function CalendarPage() {
 
     };
 
+  // DAYS ARRAY
+
+  const daysInMonth =
+    new Date(
+
+      currentYear,
+
+      currentMonth + 1,
+
+      0
+
+    ).getDate();
+
+  const days =
+    Array.from(
+
+      { length: daysInMonth },
+
+      (_, i) => i + 1
+
+    );
+
   // DATE FORMAT
 
   const formatDate =
-    (date) => {
+    (day) => {
 
-      return date
-        .toISOString()
-        .split("T")[0];
+      return `${currentYear}-${String(
+        currentMonth + 1
+      ).padStart(2, "0")}-${String(
+        day
+      ).padStart(2, "0")}`;
 
     };
 
-  // FUTURE LOCK
+  // CHECK SUBMITTED
 
-  const isFutureDate =
-    (date) => {
+  const isSubmitted =
+    (day) => {
 
-      const today =
-        new Date();
+      const formatted =
+        formatDate(day);
 
-      return (
+      return submissions.find(
 
-        date >
+        (item) =>
 
-        new Date(
-
-          today.getFullYear(),
-
-          today.getMonth(),
-
-          today.getDate()
-
-        )
+          item.update_date ===
+          formatted
 
       );
 
     };
 
-  // DAY CLICK
+  // FUTURE CHECK
 
-  const handleDateClick =
-    (value) => {
+  const isFuture =
+    (day) => {
 
-      if (
-        isFutureDate(value)
-      ) {
-
-        alert(
-          "Future dates are locked"
-        );
-
-        return;
-
-      }
-
-      setSelectedDate(value);
+      return (
+        day >
+        today.getDate()
+      );
 
     };
 
-  // SUBMIT UPDATE
+  // MISSED CHECK
 
-  const handleSubmit =
+  const isMissed =
+    (day) => {
+
+      return (
+
+        day < today.getDate() &&
+
+        !isSubmitted(day)
+
+      );
+
+    };
+
+  // SAVE UPDATE
+
+  const handleSave =
     async () => {
 
-      if (
-        !taskSummary ||
-        !progress
-      ) {
+      if (!taskSummary) {
 
         alert(
-          "Fill all required fields"
+          "Enter update"
         );
 
         return;
 
       }
-
-      // GET USER
 
       const {
 
@@ -156,8 +163,6 @@ function CalendarPage() {
 
       const email =
         sessionData.user.email;
-
-      // GET TEAM
 
       const {
 
@@ -171,42 +176,6 @@ function CalendarPage() {
 
       const teamName =
         userData[0].team_name;
-
-      // CHECK ALREADY SUBMITTED
-
-      const {
-
-        data: existing
-
-      } = await supabase
-        .from("daily_updates")
-        .select("*")
-        .eq(
-          "update_date",
-
-          formatDate(
-            selectedDate
-          )
-        )
-        .eq(
-          "user_email",
-          email
-        );
-
-      if (
-        existing &&
-        existing.length > 0
-      ) {
-
-        alert(
-          "Update already submitted"
-        );
-
-        return;
-
-      }
-
-      // INSERT UPDATE
 
       const {
 
@@ -224,17 +193,11 @@ function CalendarPage() {
 
           update_date:
             formatDate(
-              selectedDate
+              selectedDay
             ),
 
           task_summary:
-            taskSummary,
-
-          blockers_summary:
-            blockers,
-
-          progress:
-            Number(progress)
+            taskSummary
 
         }]);
 
@@ -255,8 +218,6 @@ function CalendarPage() {
         );
 
         setTaskSummary("");
-        setBlockers("");
-        setProgress("");
 
         fetchSubmissions();
 
@@ -264,83 +225,131 @@ function CalendarPage() {
 
     };
 
-  // CALENDAR COLORS
-
-  const tileClassName =
-    ({ date }) => {
-
-      const formatted =
-        formatDate(date);
-
-      const exists =
-        submissions.find(
-
-          (item) =>
-
-            item.update_date ===
-            formatted
-
-        );
-
-      if (exists) {
-
-        return
-          "bg-green-200 rounded-xl";
-
-      }
-
-      if (
-        isFutureDate(date)
-      ) {
-
-        return
-          "bg-gray-100 text-gray-400 rounded-xl";
-
-      }
-
-      return "";
-
-    };
-
   return (
 
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#f5f7fb] p-10">
 
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
 
-        <div className="mb-8">
+        <div className="mb-10">
 
           <h1 className="text-4xl font-bold mb-2">
             Sprint Calendar
           </h1>
 
           <p className="text-gray-500">
-            Submit your daily progress
+            Track daily updates
           </p>
 
         </div>
 
-        {/* CALENDAR */}
+        {/* GRID */}
 
-        <div className="bg-white rounded-3xl shadow-lg p-8">
+        <div className="grid grid-cols-7 gap-4">
 
-          <Calendar
+          {
 
-            onClickDay={
-              handleDateClick
-            }
+            days.map((day) => {
 
-            tileDisabled={({
-              date
-            }) =>
-              isFutureDate(date)
-            }
+              const submitted =
+                isSubmitted(day);
 
-            tileClassName={
-              tileClassName
-            }
+              const future =
+                isFuture(day);
 
-          />
+              const missed =
+                isMissed(day);
+
+              return (
+
+                <button
+
+                  key={day}
+
+                  disabled={future}
+
+                  onClick={() =>
+                    setSelectedDay(day)
+                  }
+
+                  className={`
+
+                    h-32 rounded-2xl border-2 transition-all p-4 text-left
+
+                    ${submitted
+                      ? "bg-green-100 border-green-400"
+                      : ""
+                    }
+
+                    ${missed
+                      ? "bg-red-100 border-red-400"
+                      : ""
+                    }
+
+                    ${future
+                      ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+                      : ""
+                    }
+
+                    ${
+                      day ===
+                      today.getDate()
+
+                      ? "border-blue-500"
+
+                      : ""
+                    }
+
+                    hover:scale-[1.02]
+
+                  `}
+                >
+
+                  <div className="flex flex-col h-full justify-between">
+
+                    <div>
+
+                      <p className="text-sm text-gray-500">
+                        {
+                          ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][
+                            new Date(
+                              currentYear,
+                              currentMonth,
+                              day
+                            ).getDay()
+                          ]
+                        }
+                      </p>
+
+                      <h2 className="text-3xl font-bold">
+                        {day}
+                      </h2>
+
+                    </div>
+
+                    <div>
+
+                      {
+
+                        submitted && (
+
+                          <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+
+                        )
+
+                      }
+
+                    </div>
+
+                  </div>
+
+                </button>
+
+              );
+
+            })
+
+          }
 
         </div>
 
@@ -348,73 +357,57 @@ function CalendarPage() {
 
         {
 
-          selectedDate && (
+          selectedDay && (
 
-            <div className="bg-white rounded-3xl shadow-lg p-8 mt-8">
+            <div className="bg-white rounded-3xl shadow-lg p-8 mt-10">
 
               <h2 className="text-2xl font-bold mb-6">
 
-                Daily Update
+                Day {selectedDay} Update
 
               </h2>
 
-              <p className="mb-6 text-gray-500">
+              <textarea
 
-                Selected Date:
+                value={taskSummary}
 
-                {" "}
-
-                {
-                  selectedDate
-                    .toDateString()
+                onChange={(e) =>
+                  setTaskSummary(
+                    e.target.value
+                  )
                 }
 
-              </p>
+                placeholder="What did you complete today?"
 
-              <div className="space-y-5">
+                className="w-full border rounded-2xl p-4 h-40"
 
-                <textarea
-                  placeholder="Tasks completed today"
-                  value={taskSummary}
-                  onChange={(e) =>
-                    setTaskSummary(
-                      e.target.value
-                    )
-                  }
-                  className="w-full border rounded-2xl p-4 h-32"
-                />
+              />
 
-                <textarea
-                  placeholder="Blockers/issues"
-                  value={blockers}
-                  onChange={(e) =>
-                    setBlockers(
-                      e.target.value
-                    )
-                  }
-                  className="w-full border rounded-2xl p-4 h-32"
-                />
-
-                <input
-                  type="number"
-                  placeholder="Progress %"
-                  value={progress}
-                  onChange={(e) =>
-                    setProgress(
-                      e.target.value
-                    )
-                  }
-                  className="w-full border rounded-2xl p-4"
-                />
+              <div className="flex gap-4 mt-6">
 
                 <button
-                  onClick={
-                    handleSubmit
-                  }
+
+                  onClick={handleSave}
+
                   className="bg-blue-600 text-white px-6 py-3 rounded-2xl"
+
                 >
 
-                  Submit Update
+                  Save
+
+                </button>
+
+                <button
+
+                  onClick={() =>
+                    setTaskSummary("")
+                  }
+
+                  className="border px-6 py-3 rounded-2xl"
+
+                >
+
+                  Clear
 
                 </button>
 
