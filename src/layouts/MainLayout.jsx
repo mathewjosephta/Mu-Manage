@@ -518,9 +518,13 @@ function MainLayout() {
 
       {/* CONTENT */}
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
 
-        <Outlet />
+        <div className="p-8">
+
+          <Outlet />
+
+        </div>
 
       </div>
 
