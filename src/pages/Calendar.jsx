@@ -1,8 +1,6 @@
 import {
-
   useEffect,
   useState
-
 } from "react";
 
 import { supabase }
@@ -22,14 +20,28 @@ function CalendarPage() {
     setSubmissions] =
       useState([]);
 
-  const today =
-    new Date();
+  const [loading,
+    setLoading] =
+      useState(false);
 
-  const currentMonth =
-    today.getMonth();
+  const [showSuccess,
+    setShowSuccess] =
+      useState(false);
 
-  const currentYear =
-    today.getFullYear();
+  // JUNE 2026
+
+  const days =
+    Array.from(
+      { length: 30 },
+      (_, i) => i + 1
+    );
+
+  const currentYear = 2026;
+  const currentMonth = 5;
+
+  // TEST DAY
+
+  const testCurrentDay = 1;
 
   // FETCH SUBMISSIONS
 
@@ -42,13 +54,10 @@ function CalendarPage() {
   const fetchSubmissions =
     async () => {
 
-      const {
-
-        data
-
-      } = await supabase
-        .from("daily_updates")
-        .select("*");
+      const { data } =
+        await supabase
+          .from("daily_updates")
+          .select("*");
 
       if (data) {
 
@@ -58,29 +67,7 @@ function CalendarPage() {
 
     };
 
-  // DAYS ARRAY
-
-  const daysInMonth =
-    new Date(
-
-      currentYear,
-
-      currentMonth + 1,
-
-      0
-
-    ).getDate();
-
-  const days =
-    Array.from(
-
-      { length: daysInMonth },
-
-      (_, i) => i + 1
-
-    );
-
-  // DATE FORMAT
+  // FORMAT DATE
 
   const formatDate =
     (day) => {
@@ -93,9 +80,9 @@ function CalendarPage() {
 
     };
 
-  // CHECK SUBMITTED
+  // GET SUBMISSION
 
-  const isSubmitted =
+  const getSubmission =
     (day) => {
 
       const formatted =
@@ -112,30 +99,62 @@ function CalendarPage() {
 
     };
 
-  // FUTURE CHECK
+  // SUBMITTED
+
+  const isSubmitted =
+    (day) => {
+
+      return !!getSubmission(day);
+
+    };
+
+  // FUTURE
 
   const isFuture =
     (day) => {
 
-      return (
-        day >
-        today.getDate()
-      );
+      return day > testCurrentDay;
 
     };
 
-  // MISSED CHECK
+  // MISSED
 
   const isMissed =
     (day) => {
 
       return (
-
-        day < today.getDate() &&
-
-        !isSubmitted(day)
-
+        !isFuture(day) &&
+        !isSubmitted(day) &&
+        day !== testCurrentDay
       );
+
+    };
+
+  // CLICK DAY
+
+  const handleDayClick =
+    (day) => {
+
+      if (isFuture(day)) return;
+
+      setSelectedDay(day);
+
+      const existing =
+        getSubmission(day);
+
+      if (existing) {
+
+        setTaskSummary(
+          existing.task_summary
+        );
+
+      }
+
+      else {
+
+        setTaskSummary("");
+
+      }
 
     };
 
@@ -144,15 +163,9 @@ function CalendarPage() {
   const handleSave =
     async () => {
 
-      if (!taskSummary) {
+      if (!taskSummary) return;
 
-        alert(
-          "Enter update"
-        );
-
-        return;
-
-      }
+      setLoading(true);
 
       const {
 
@@ -177,51 +190,99 @@ function CalendarPage() {
       const teamName =
         userData[0].team_name;
 
-      const {
+      const existing =
+        getSubmission(selectedDay);
 
-        error
+      // CLOSE MODAL INSTANTLY
 
-      } = await supabase
-        .from("daily_updates")
-        .insert([{
+      setSelectedDay(null);
 
-          user_email:
-            email,
+      // EDIT TODAY
 
-          team_name:
-            teamName,
+      if (
+        existing &&
+        selectedDay ===
+        testCurrentDay
+      ) {
 
-          update_date:
-            formatDate(
-              selectedDay
-            ),
+        const {
 
-          task_summary:
-            taskSummary
+          error
 
-        }]);
+        } = await supabase
+          .from("daily_updates")
+          .update({
 
-      if (error) {
+            task_summary:
+              taskSummary
 
-        console.log(error);
+          })
+          .eq(
+            "id",
+            existing.id
+          );
 
-        alert(
-          "Submission failed"
-        );
+        if (!error) {
+
+          fetchSubmissions();
+
+          setShowSuccess(true);
+
+          setTimeout(() => {
+
+            setShowSuccess(false);
+
+          }, 1200);
+
+        }
 
       }
 
-      else {
+      // NEW UPDATE
 
-        alert(
-          "Update submitted"
-        );
+      else if (!existing) {
 
-        setTaskSummary("");
+        const {
 
-        fetchSubmissions();
+          error
+
+        } = await supabase
+          .from("daily_updates")
+          .insert([{
+
+            user_email:
+              email,
+
+            team_name:
+              teamName,
+
+            update_date:
+              formatDate(
+                selectedDay
+              ),
+
+            task_summary:
+              taskSummary
+
+          }]);
+
+        if (!error) {
+
+          fetchSubmissions();
+
+          setShowSuccess(true);
+
+          setTimeout(() => {
+
+            setShowSuccess(false);
+
+          }, 2000);
+
+        }
 
       }
+
+      setLoading(false);
 
     };
 
@@ -231,21 +292,27 @@ function CalendarPage() {
 
       <div className="max-w-7xl mx-auto">
 
+        {/* HEADER */}
+
         <div className="mb-10">
 
           <h1 className="text-4xl font-bold mb-2">
-            Sprint Calendar
+
+            June 2026 Sprint
+
           </h1>
 
           <p className="text-gray-500">
-            Track daily updates
+
+            Daily progress tracker
+
           </p>
 
         </div>
 
-        {/* GRID */}
+        {/* CALENDAR */}
 
-        <div className="grid grid-cols-7 gap-4">
+        <div className="grid grid-cols-7 gap-3">
 
           {
 
@@ -269,12 +336,12 @@ function CalendarPage() {
                   disabled={future}
 
                   onClick={() =>
-                    setSelectedDay(day)
+                    handleDayClick(day)
                   }
 
                   className={`
 
-                    h-32 rounded-2xl border-2 transition-all p-4 text-left
+                    h-20 rounded-2xl border p-2.5 transition-all text-left relative
 
                     ${submitted
                       ? "bg-green-100 border-green-400"
@@ -282,7 +349,7 @@ function CalendarPage() {
                     }
 
                     ${missed
-                      ? "bg-red-100 border-red-400"
+                      ? "bg-red-100 border-red-300"
                       : ""
                     }
 
@@ -293,7 +360,7 @@ function CalendarPage() {
 
                     ${
                       day ===
-                      today.getDate()
+                      testCurrentDay
 
                       ? "border-blue-500"
 
@@ -309,37 +376,37 @@ function CalendarPage() {
 
                     <div>
 
-                      <p className="text-sm text-gray-500">
+                      <p className="text-gray-500 text-[10px]">
+
                         {
                           ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][
                             new Date(
-                              currentYear,
-                              currentMonth,
+                              2026,
+                              5,
                               day
                             ).getDay()
                           ]
                         }
+
                       </p>
 
-                      <h2 className="text-3xl font-bold">
+                      <h2 className="text-lg font-semibold mt-1">
+
                         {day}
+
                       </h2>
 
                     </div>
 
-                    <div>
+                    {
 
-                      {
+                      submitted && (
 
-                        submitted && (
+                        <div className="w-2 h-2 rounded-full bg-green-600"></div>
 
-                          <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                      )
 
-                        )
-
-                      }
-
-                    </div>
+                    }
 
                   </div>
 
@@ -353,19 +420,96 @@ function CalendarPage() {
 
         </div>
 
-        {/* FORM */}
+      </div>
 
-        {
+      {/* SUCCESS FULLSCREEN */}
 
-          selectedDay && (
+     {/* SUCCESS FULLSCREEN */}
 
-            <div className="bg-white rounded-3xl shadow-lg p-8 mt-10">
+{
 
-              <h2 className="text-2xl font-bold mb-6">
+  showSuccess && (
 
-                Day {selectedDay} Update
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white/30 backdrop-blur-sm overflow-hidden">
 
-              </h2>
+      {/* OUTER RIPPLE */}
+
+      <div className="absolute w-[420px] h-[420px] rounded-full bg-green-200/30 animate-[ping_1.2s_ease-out]"></div>
+
+      {/* MID RIPPLE */}
+
+      <div className="absolute w-[320px] h-[320px] rounded-full bg-green-300/30 animate-[ping_1.2s_ease-out]"></div>
+
+      {/* INNER RIPPLE */}
+
+      <div className="absolute w-[220px] h-[220px] rounded-full bg-green-400/20 animate-[ping_1.2s_ease-out]"></div>
+
+      {/* MAIN ICON */}
+
+      <div className="relative z-10">
+
+        <div className="w-36 h-36 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_80px_rgba(34,197,94,0.5)] animate-none scale-100">
+
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-20 h-20 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={3}
+          >
+
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M5 13l4 4L19 7"
+            />
+
+          </svg>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  )
+
+}
+
+      {/* MODAL */}
+
+      {
+
+        selectedDay && (
+
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+            <div className="bg-white w-[550px] rounded-3xl p-8 shadow-2xl">
+
+              <div className="flex items-center justify-between mb-6">
+
+                <h2 className="text-2xl font-bold">
+
+                  Day {selectedDay} Update
+
+                </h2>
+
+                <button
+
+                  onClick={() =>
+                    setSelectedDay(null)
+                  }
+
+                  className="text-2xl"
+
+                >
+
+                  ×
+
+                </button>
+
+              </div>
 
               <textarea
 
@@ -377,37 +521,71 @@ function CalendarPage() {
                   )
                 }
 
-                placeholder="What did you complete today?"
+                readOnly={
+                  selectedDay !==
+                  testCurrentDay
+                }
 
-                className="w-full border rounded-2xl p-4 h-40"
+                placeholder="Daily update"
 
+                className={`
+
+                  w-full border rounded-2xl p-5 h-44 outline-none
+
+                  ${
+                    selectedDay !==
+                    testCurrentDay
+
+                    ? "bg-gray-100"
+
+                    : ""
+                  }
+
+                `}
               />
 
               <div className="flex gap-4 mt-6">
 
-                <button
+                {
 
-                  onClick={handleSave}
+                  selectedDay ===
+                  testCurrentDay && (
 
-                  className="bg-blue-600 text-white px-6 py-3 rounded-2xl"
+                    <button
 
-                >
+                      onClick={
+                        handleSave
+                      }
 
-                  Save
+                      disabled={loading}
 
-                </button>
+                      className="bg-blue-600 text-white px-6 py-3 rounded-2xl"
+
+                    >
+
+                      {
+                        loading
+                          ? "Saving..."
+                          : "Save Update"
+                      }
+
+                    </button>
+
+                  )
+
+                }
 
                 <button
 
                   onClick={() =>
-                    setTaskSummary("")
+                    setSelectedDay(null)
                   }
 
                   className="border px-6 py-3 rounded-2xl"
 
                 >
 
-                  Clear
+                  Close
 
                 </button>
 
@@ -415,11 +593,11 @@ function CalendarPage() {
 
             </div>
 
-          )
+          </div>
 
-        }
+        )
 
-      </div>
+      }
 
     </div>
 
