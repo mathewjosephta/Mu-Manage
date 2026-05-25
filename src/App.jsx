@@ -18,11 +18,14 @@ from "./pages/Projects";
 import Analytics
 from "./pages/Analytics";
 
-import DailyUpdate
-from "./pages/DailyUpdate";
-
 import LinkedinUpdate
 from "./pages/LinkedinUpdate";
+
+import TeamChat
+from "./pages/TeamChat";
+
+import Tasks
+from "./pages/Tasks";
 
 import Login
 from "./pages/Login";
@@ -39,7 +42,9 @@ from "./layouts/MainLayout";
 function App() {
 
   const userRole =
-    localStorage.getItem("userRole");
+    localStorage.getItem(
+      "userRole"
+    );
 
   return (
 
@@ -47,7 +52,7 @@ function App() {
 
       <Routes>
 
-        {/* LOGIN */}
+        {/* PUBLIC */}
 
         <Route
           path="/"
@@ -59,23 +64,35 @@ function App() {
           element={<Test />}
         />
 
-        {/* PM ROUTES */}
+        {/* PROTECTED */}
 
         <Route
+
           element={
+
             <ProtectedRoute
 
-              userRole={userRole}
+              userRole={
+                userRole
+              }
 
-              allowedRoles={["pm"]}
+              allowedRoles={[
+                "pm",
+                "lead",
+                "member"
+              ]}
 
             >
 
               <MainLayout />
 
             </ProtectedRoute>
+
           }
+
         >
+
+          {/* PM */}
 
           <Route
             path="/dashboard"
@@ -92,28 +109,7 @@ function App() {
             element={<Projects />}
           />
 
-        </Route>
-
-        {/* LEAD + MEMBER */}
-
-        <Route
-          element={
-            <ProtectedRoute
-
-              userRole={userRole}
-
-              allowedRoles={[
-                "lead",
-                "member"
-              ]}
-
-            >
-
-              <MainLayout />
-
-            </ProtectedRoute>
-          }
-        >
+          {/* SHARED */}
 
           <Route
             path="/calendar"
@@ -121,8 +117,13 @@ function App() {
           />
 
           <Route
-            path="/daily-update"
-            element={<DailyUpdate />}
+            path="/team-chat"
+            element={<TeamChat />}
+          />
+
+          <Route
+            path="/tasks"
+            element={<Tasks />}
           />
 
           <Route
