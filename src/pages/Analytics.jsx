@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import {
+
   PieChart,
   Pie,
   Cell,
@@ -11,8 +12,22 @@ import {
   BarChart,
   Bar,
   XAxis,
-  Tooltip
+  Tooltip,
+  AreaChart,
+  Area
+
 } from "recharts";
+
+import {
+
+  Activity,
+  CheckCircle2,
+  Clock3,
+  AlertTriangle,
+  Trophy,
+  Users
+
+} from "lucide-react";
 
 import { supabase }
 from "../services/supabase";
@@ -153,9 +168,9 @@ function Analytics() {
 
   const COLORS = [
 
-    "#d1d5db",
-    "#facc15",
-    "#22c55e"
+    "#ffb3c7",
+    "#ffe58f",
+    "#86efac"
 
   ];
 
@@ -185,23 +200,64 @@ function Analytics() {
       })
     );
 
+  // WEEK DATA
+
+  const weeklyData = [
+
+    {
+      day: "Mon",
+      tasks: 3
+    },
+
+    {
+      day: "Tue",
+      tasks: 5
+    },
+
+    {
+      day: "Wed",
+      tasks: 8
+    },
+
+    {
+      day: "Thu",
+      tasks: 6
+    },
+
+    {
+      day: "Fri",
+      tasks: 11
+    },
+
+    {
+      day: "Sat",
+      tasks: 13
+    },
+
+    {
+      day: "Sun",
+      tasks: 15
+    }
+
+  ];
+
   return (
 
-    <div className="space-y-6">
+    <div className="bg-[#f7f3ea] p-8 space-y-7 min-h-screen">
 
       {/* HEADER */}
 
-      <div>
+      <div className="bg-[#fff7d6] border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[6px_6px_0px_#1d2b53]">
 
-        <h1 className="text-4xl font-bold">
+        <h1 className="text-5xl font-black text-[#1d2b53]">
 
           Analytics
 
         </h1>
 
-        <p className="text-gray-500 mt-2">
+        <p className="text-[#5c6b8a] mt-2 text-lg">
 
-          Team productivity overview
+          Team productivity insights & sprint analytics
 
         </p>
 
@@ -209,69 +265,153 @@ function Analytics() {
 
       {/* STATS */}
 
-      <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-4 gap-5">
 
-        <div className="bg-white rounded-2xl p-5 border">
+        {/* CARD */}
 
-          <p className="text-sm text-gray-400 mb-2">
+        <div className="bg-[#dcecff] border-[4px] border-[#1d2b53] rounded-[28px] p-6 shadow-[5px_5px_0px_#1d2b53]">
+
+          <div className="flex items-center justify-between mb-5">
+
+            <div className="w-14 h-14 rounded-2xl bg-[#3b82f6] border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+              <Activity
+                size={24}
+                className="text-white"
+              />
+
+            </div>
+
+            <div className="bg-white border-[2px] border-[#1d2b53] rounded-full px-4 py-1 text-sm font-bold">
+
+              Live
+
+            </div>
+
+          </div>
+
+          <p className="text-[#5c6b8a] font-semibold">
 
             Total Tasks
 
           </p>
 
-          <h2 className="text-4xl font-bold">
+          <h1 className="text-5xl font-black text-[#1d2b53] mt-2">
 
             {tasks.length}
 
-          </h2>
+          </h1>
 
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border">
+        {/* CARD */}
 
-          <p className="text-sm text-gray-400 mb-2">
+        <div className="bg-[#d8f7df] border-[4px] border-[#1d2b53] rounded-[28px] p-6 shadow-[5px_5px_0px_#1d2b53]">
+
+          <div className="flex items-center justify-between mb-5">
+
+            <div className="w-14 h-14 rounded-2xl bg-[#22c55e] border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+              <CheckCircle2
+                size={24}
+                className="text-white"
+              />
+
+            </div>
+
+            <div className="bg-white border-[2px] border-[#1d2b53] rounded-full px-4 py-1 text-sm font-bold">
+
+              Done
+
+            </div>
+
+          </div>
+
+          <p className="text-[#5c6b8a] font-semibold">
 
             Completed
 
           </p>
 
-          <h2 className="text-4xl font-bold text-green-500">
+          <h1 className="text-5xl font-black text-[#1d2b53] mt-2">
 
             {completed}
 
-          </h2>
+          </h1>
 
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border">
+        {/* CARD */}
 
-          <p className="text-sm text-gray-400 mb-2">
+        <div className="bg-[#fff5b8] border-[4px] border-[#1d2b53] rounded-[28px] p-6 shadow-[5px_5px_0px_#1d2b53]">
+
+          <div className="flex items-center justify-between mb-5">
+
+            <div className="w-14 h-14 rounded-2xl bg-[#facc15] border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+              <Clock3
+                size={24}
+                className="text-[#1d2b53]"
+              />
+
+            </div>
+
+            <div className="bg-white border-[2px] border-[#1d2b53] rounded-full px-4 py-1 text-sm font-bold">
+
+              Working
+
+            </div>
+
+          </div>
+
+          <p className="text-[#5c6b8a] font-semibold">
 
             In Progress
 
           </p>
 
-          <h2 className="text-4xl font-bold text-yellow-500">
+          <h1 className="text-5xl font-black text-[#1d2b53] mt-2">
 
             {progress}
 
-          </h2>
+          </h1>
 
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border">
+        {/* CARD */}
 
-          <p className="text-sm text-gray-400 mb-2">
+        <div className="bg-[#ffe0f0] border-[4px] border-[#1d2b53] rounded-[28px] p-6 shadow-[5px_5px_0px_#1d2b53]">
+
+          <div className="flex items-center justify-between mb-5">
+
+            <div className="w-14 h-14 rounded-2xl bg-[#ec4899] border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+              <Users
+                size={24}
+                className="text-white"
+              />
+
+            </div>
+
+            <div className="bg-white border-[2px] border-[#1d2b53] rounded-full px-4 py-1 text-sm font-bold">
+
+              Team
+
+            </div>
+
+          </div>
+
+          <p className="text-[#5c6b8a] font-semibold">
 
             Members
 
           </p>
 
-          <h2 className="text-4xl font-bold text-blue-500">
+          <h1 className="text-5xl font-black text-[#1d2b53] mt-2">
 
             {users.length}
 
-          </h2>
+          </h1>
 
         </div>
 
@@ -279,19 +419,74 @@ function Analytics() {
 
       {/* CHARTS */}
 
-      <div className="grid lg:grid-cols-2 gap-5">
+      <div className="grid lg:grid-cols-3 gap-6">
+
+        {/* AREA */}
+
+        <div className="lg:col-span-2 bg-white border-[4px] border-[#1d2b53] rounded-[30px] p-6 shadow-[5px_5px_0px_#1d2b53]">
+
+          <div className="flex items-center gap-3 mb-7">
+
+            <Activity
+              size={30}
+              className="text-[#3b82f6]"
+            />
+
+            <h2 className="text-3xl font-black text-[#1d2b53]">
+
+              Weekly Sprint Flow
+
+            </h2>
+
+          </div>
+
+          <div className="h-[320px]">
+
+            <ResponsiveContainer>
+
+              <AreaChart
+                data={weeklyData}
+              >
+
+                <XAxis
+                  dataKey="day"
+                />
+
+                <Tooltip />
+
+                <Area
+
+                  type="monotone"
+
+                  dataKey="tasks"
+
+                  stroke="#3b82f6"
+
+                  fill="#bfdbfe"
+
+                  strokeWidth={5}
+
+                />
+
+              </AreaChart>
+
+            </ResponsiveContainer>
+
+          </div>
+
+        </div>
 
         {/* PIE */}
 
-        <div className="bg-white rounded-2xl border p-5">
+        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[30px] p-6 shadow-[5px_5px_0px_#1d2b53]">
 
-          <h2 className="text-xl font-semibold mb-4">
+          <h2 className="text-3xl font-black text-[#1d2b53] mb-7">
 
-            Task Distribution
+            Task Split
 
           </h2>
 
-          <div className="h-[260px]">
+          <div className="h-[320px]">
 
             <ResponsiveContainer>
 
@@ -303,9 +498,9 @@ function Analytics() {
 
                   dataKey="value"
 
-                  innerRadius={55}
+                  innerRadius={65}
 
-                  outerRadius={85}
+                  outerRadius={100}
 
                 >
 
@@ -346,17 +541,32 @@ function Analytics() {
 
         </div>
 
+      </div>
+
+      {/* TEAM PERFORMANCE */}
+
+      <div className="grid lg:grid-cols-2 gap-6">
+
         {/* BAR */}
 
-        <div className="bg-white rounded-2xl border p-5">
+        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[30px] p-6 shadow-[5px_5px_0px_#1d2b53]">
 
-          <h2 className="text-xl font-semibold mb-4">
+          <div className="flex items-center gap-3 mb-7">
 
-            Team Tasks
+            <Trophy
+              size={28}
+              className="text-[#ec4899]"
+            />
 
-          </h2>
+            <h2 className="text-3xl font-black text-[#1d2b53]">
 
-          <div className="h-[260px]">
+              Team Performance
+
+            </h2>
+
+          </div>
+
+          <div className="h-[300px]">
 
             <ResponsiveContainer>
 
@@ -371,13 +581,18 @@ function Analytics() {
                 <Tooltip />
 
                 <Bar
+
                   dataKey="tasks"
+
+                  fill="#60a5fa"
+
                   radius={[
-                    8,
-                    8,
+                    12,
+                    12,
                     0,
                     0
                   ]}
+
                 />
 
               </BarChart>
@@ -388,58 +603,84 @@ function Analytics() {
 
         </div>
 
-      </div>
+        {/* RECENT */}
 
-      {/* RECENT */}
+        <div className="bg-[#fff7d6] border-[4px] border-[#1d2b53] rounded-[30px] p-6 shadow-[5px_5px_0px_#1d2b53]">
 
-      <div className="bg-white rounded-2xl border p-5">
+          <div className="flex items-center justify-between mb-7">
 
-        <div className="flex items-center justify-between mb-5">
+            <h2 className="text-3xl font-black text-[#1d2b53]">
 
-          <h2 className="text-xl font-semibold">
+              Recent Tasks
 
-            Recent Tasks
+            </h2>
 
-          </h2>
+            <div className="bg-white border-[2px] border-[#1d2b53] rounded-full px-4 py-1 text-sm font-bold">
 
-          <span className="text-sm text-gray-400">
+              Live
 
-            Live
+            </div>
 
-          </span>
+          </div>
 
-        </div>
+          <div className="space-y-4">
 
-        <div className="space-y-3">
+            {
 
-          {
+              tasks
 
-            tasks
+                .slice(0, 5)
 
-              .slice(0, 5)
+                .map(
+                  (task) => (
 
-              .map(
-                (task) => (
+                    <div
 
-                  <div
+                      key={task.id}
 
-                    key={task.id}
+                      className="bg-white border-[3px] border-[#1d2b53] rounded-[22px] p-5 shadow-[3px_3px_0px_#1d2b53]"
 
-                    className="flex items-center justify-between border rounded-xl px-4 py-3"
+                    >
 
-                  >
+                      <div className="flex items-center justify-between mb-3">
 
-                    <div>
+                        <h3 className="font-black text-[#1d2b53] text-lg">
 
-                      <h3 className="font-medium">
+                          {
+                            task.title
+                          }
 
-                        {
-                          task.title
-                        }
+                        </h3>
 
-                      </h3>
+                        <div className={`
 
-                      <p className="text-sm text-gray-400 capitalize">
+                          px-4 py-2 rounded-full text-xs font-bold border-[2px] border-[#1d2b53]
+
+                          ${
+                            task.status ===
+                            "completed"
+
+                            ? "bg-[#d8f7df]"
+
+                            : task.status ===
+                              "in progress"
+
+                            ? "bg-[#fff5b8]"
+
+                            : "bg-[#ffe0f0]"
+                          }
+
+                        `}>
+
+                          {
+                            task.status
+                          }
+
+                        </div>
+
+                      </div>
+
+                      <p className="capitalize text-[#5c6b8a]">
 
                         {
                           task.team_name
@@ -449,38 +690,12 @@ function Analytics() {
 
                     </div>
 
-                    <div className={`
-
-                      px-3 py-1 rounded-full text-sm capitalize
-
-                      ${
-                        task.status ===
-                        "completed"
-
-                        ? "bg-green-100 text-green-700"
-
-                        : task.status ===
-                          "in progress"
-
-                        ? "bg-yellow-100 text-yellow-700"
-
-                        : "bg-gray-200 text-gray-700"
-                      }
-
-                    `}>
-
-                      {
-                        task.status
-                      }
-
-                    </div>
-
-                  </div>
-
+                  )
                 )
-              )
 
-          }
+            }
+
+          </div>
 
         </div>
 

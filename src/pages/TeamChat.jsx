@@ -36,7 +36,7 @@ function TeamChat() {
   const bottomRef =
     useRef(null);
 
-  // PM TEAM ROOMS
+  // TEAMS
 
   const teams = [
 
@@ -72,14 +72,20 @@ function TeamChat() {
         data
 
       } = await supabase
+
         .from("users")
+
         .select("*")
+
         .eq("email", email)
+
         .limit(1);
 
       if (
+
         data &&
         data.length > 0
+
       ) {
 
         const user =
@@ -106,7 +112,7 @@ function TeamChat() {
 
         }
 
-        // MEMBERS
+        // MEMBER
 
         else {
 
@@ -167,7 +173,7 @@ function TeamChat() {
 
     };
 
-  // FETCH TEAM NOTIFICATIONS
+  // UNREAD COUNTS
 
   const fetchUnreadCounts =
     async (user) => {
@@ -193,7 +199,8 @@ function TeamChat() {
 
         .select("*");
 
-      if (!data) return;
+      if (!data)
+        return;
 
       const unreadMap =
         {};
@@ -263,7 +270,7 @@ function TeamChat() {
 
       }
 
-      // MEMBERS
+      // MEMBER
 
       else {
 
@@ -353,8 +360,10 @@ function TeamChat() {
       );
 
   }, [
+
     currentUser,
     selectedTeam
+
   ]);
 
   // AUTO SCROLL
@@ -371,7 +380,7 @@ function TeamChat() {
 
   }, [messages]);
 
-  // MARK TEAM AS READ
+  // MARK READ
 
   useEffect(() => {
 
@@ -413,8 +422,10 @@ function TeamChat() {
     }
 
   }, [
+
     selectedTeam,
     messages
+
   ]);
 
   // SEND MESSAGE
@@ -477,9 +488,9 @@ function TeamChat() {
 
     return (
 
-      <div className="h-full flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center bg-[#f7f3ea]">
 
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-3xl font-black text-[#1d2b53]">
 
           Loading chat...
 
@@ -493,59 +504,64 @@ function TeamChat() {
 
   return (
 
-    <div className="bg-[#f5f7fb] h-full flex flex-col">
+    <div className="h-screen bg-[#f7f3ea] flex flex-col overflow-hidden">
 
-      {/* TOPBAR */}
+      {/* HEADER */}
 
-      <div className="bg-white border-b px-10 py-6 flex items-center justify-between shrink-0">
+      <div className="px-8 py-6 border-b-[4px] border-[#1d2b53] bg-[#fff7d6] shrink-0">
 
-        <div>
+        <div className="flex items-center justify-between">
 
-          <h1 className="text-3xl font-bold">
+          <div>
 
-            Team Chat
+            <h1 className="text-5xl font-black text-[#1d2b53]">
 
-          </h1>
+              Team Chat
 
-          <p className="text-gray-500 mt-1 capitalize">
+            </h1>
+
+            <p className="text-[#5c6b8a] mt-2 text-lg capitalize">
+
+              {
+
+                currentUser?.role ===
+                "pm"
+
+                ? `Viewing ${selectedTeam} Team`
+
+                : `${selectedTeam} Team Workspace`
+
+              }
+
+            </p>
+
+          </div>
+
+          <div className="flex items-center gap-4">
 
             {
 
-              currentUser?.role ===
-              "pm"
+              totalUnread > 0 && (
 
-              ? `Viewing ${selectedTeam} Team`
+                <div className="bg-[#ff5f7e] border-[3px] border-[#1d2b53] shadow-[3px_3px_0px_#1d2b53] text-white px-5 py-2 rounded-full text-sm font-bold">
 
-              : `${selectedTeam} Team Workspace`
+                  {
+                    totalUnread
+                  } unread
+
+                </div>
+
+              )
 
             }
 
-          </p>
+            <div className="bg-[#dcecff] border-[3px] border-[#1d2b53] shadow-[3px_3px_0px_#1d2b53] text-[#1d2b53] px-5 py-2 rounded-full text-sm font-bold capitalize">
 
-        </div>
+              {
+                currentUser?.role
+              }
 
-        <div className="flex items-center gap-4">
-
-          {
-
-            totalUnread > 0 && (
-
-              <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
-
-                {
-                  totalUnread
-                } unread
-              </div>
-
-            )
-
-          }
-
-          <div className="bg-blue-100 text-blue-700 px-5 py-2 rounded-2xl text-sm font-medium capitalize">
-
-            {
-              currentUser?.role
-            }
+            </div>
 
           </div>
 
@@ -553,14 +569,14 @@ function TeamChat() {
 
       </div>
 
-      {/* TEAM SWITCHER */}
+      {/* TEAM TABS */}
 
       {
 
         currentUser?.role ===
         "pm" && (
 
-          <div className="bg-white border-b px-10 py-4 flex gap-4 overflow-x-auto shrink-0">
+          <div className="px-8 py-5 flex gap-4 overflow-x-auto bg-[#f7f3ea] border-b-[4px] border-[#1d2b53] shrink-0">
 
             {
 
@@ -585,18 +601,24 @@ function TeamChat() {
 
                     className={`
 
-                      px-5 py-3 rounded-2xl capitalize whitespace-nowrap transition-all flex items-center gap-3
+                      px-6 py-4 rounded-[22px]
+                      whitespace-nowrap
+                      transition-all
+                      flex items-center gap-3
+                      border-[3px] border-[#1d2b53]
+                      font-bold capitalize
 
                       ${
                         selectedTeam ===
                         team
 
-                        ? "bg-blue-600 text-white"
+                        ? "bg-[#3b82f6] text-white shadow-[4px_4px_0px_#1d2b53]"
 
-                        : "bg-gray-100 hover:bg-gray-200"
+                        : "bg-white text-[#1d2b53]"
                       }
 
                     `}
+
                   >
 
                     <span>
@@ -611,7 +633,7 @@ function TeamChat() {
                         team
                       ] > 0 && (
 
-                        <div className="min-w-[22px] h-[22px] px-2 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                        <div className="min-w-[24px] h-[24px] px-2 rounded-full bg-[#ff5f7e] border-[2px] border-[#1d2b53] text-white text-xs flex items-center justify-center">
 
                           {
                             teamUnread[
@@ -638,100 +660,203 @@ function TeamChat() {
 
       }
 
-      {/* CHAT AREA */}
+      {/* MESSAGES */}
 
-      <div className="flex-1 overflow-y-auto px-10 py-8 space-y-8">
+      <div className="flex-1 min-h-0 overflow-y-auto px-8 py-8">
 
-        {
+        <div className="space-y-8">
 
-          messages.map(
+          {
 
-            (msg) => (
+            messages.map(
 
-              <div
-                key={msg.id}
-                className={`
+              (msg) => {
 
-                  max-w-[850px]
+                const isMine =
 
-                  ${
-                    msg.sender_email ===
-                    currentUser?.email
+                  msg.sender_email ===
+                  currentUser?.email;
 
-                    ? "ml-auto"
+                return (
 
-                    : ""
-                  }
+                  <div
 
-                `}
-              >
+                    key={msg.id}
 
-                <div className="mb-3 flex items-center gap-3">
+                    className={`
 
-                  <h3 className="font-semibold text-lg">
+                      flex
 
-                    {
-                      msg.sender_name
-                    }
+                      ${
+                        isMine
 
-                  </h3>
+                        ? "justify-end"
 
-                  <span className="text-sm text-gray-400 capitalize">
+                        : "justify-start"
+                      }
 
-                    {
-                      msg.sender_role
-                    }
+                    `}
 
-                  </span>
+                  >
 
-                  <span className="text-sm text-gray-400 capitalize">
+                    <div className="max-w-[70%]">
 
-                    {
-                      msg.team_name
-                    }
+                      {/* USER */}
 
-                  </span>
+                      <div className={`
 
-                </div>
+                        flex items-center gap-3 mb-3
 
-                <div className={`
+                        ${
+                          isMine
 
-                  rounded-[28px] px-7 py-5 shadow-sm
+                          ? "justify-end"
 
-                  ${
-                    msg.sender_email ===
-                    currentUser?.email
+                          : "justify-start"
+                        }
 
-                    ? "bg-blue-600 text-white"
+                      `}>
 
-                    : "bg-white"
-                  }
+                        {
 
-                `}>
+                          !isMine && (
 
-                  <p className="leading-8 whitespace-pre-wrap text-[16px]">
+                            <div className="w-12 h-12 rounded-2xl border-[3px] border-[#1d2b53] bg-[#ffe0f0] text-[#1d2b53] flex items-center justify-center font-black text-lg">
 
-                    {msg.message}
+                              {
 
-                  </p>
+                                msg.sender_name?.[0]
 
-                </div>
+                              }
 
-              </div>
+                            </div>
+
+                          )
+
+                        }
+
+                        <div className={
+
+                          isMine
+                          ? "text-right"
+                          : ""
+
+                        }>
+
+                          <h3 className="font-black text-[#1d2b53] text-lg">
+
+                            {
+                              msg.sender_name
+                            }
+
+                          </h3>
+
+                          <div className={`
+
+                            flex gap-3 text-sm text-[#5c6b8a]
+
+                            ${
+                              isMine
+
+                              ? "justify-end"
+
+                              : ""
+                            }
+
+                          `}>
+
+                            <span className="capitalize">
+
+                              {
+                                msg.sender_role
+                              }
+
+                            </span>
+
+                            <span>
+
+                              •
+
+                            </span>
+
+                            <span className="capitalize">
+
+                              {
+                                msg.team_name
+                              }
+
+                            </span>
+
+                          </div>
+
+                        </div>
+
+                        {
+
+                          isMine && (
+
+                            <div className="w-12 h-12 rounded-2xl border-[3px] border-[#1d2b53] bg-[#3b82f6] text-white flex items-center justify-center font-black text-lg">
+
+                              {
+
+                                msg.sender_name?.[0]
+
+                              }
+
+                            </div>
+
+                          )
+
+                        }
+
+                      </div>
+
+                      {/* MESSAGE */}
+
+                      <div className={`
+
+                        rounded-[28px]
+                        px-7 py-6
+                        border-[4px] border-[#1d2b53]
+                        leading-8
+                        text-[16px]
+                        break-words
+
+                        ${
+                          isMine
+
+                          ? "bg-[#3b82f6] text-white shadow-[5px_5px_0px_#1d2b53]"
+
+                          : "bg-white text-[#1d2b53] shadow-[5px_5px_0px_#1d2b53]"
+                        }
+
+                      `}>
+
+                        {msg.message}
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                );
+
+              }
 
             )
 
-          )
+          }
 
-        }
+          <div ref={bottomRef}></div>
 
-        <div ref={bottomRef}></div>
+        </div>
 
       </div>
 
       {/* INPUT */}
 
-      <div className="bg-white border-t px-10 py-5 shrink-0">
+      <div className="bg-[#fff7d6] border-t-[4px] border-[#1d2b53] px-8 py-6 shrink-0">
 
         <div className="flex items-center gap-4">
 
@@ -749,7 +874,7 @@ function TeamChat() {
 
             placeholder="Send message to team..."
 
-            className="flex-1 border rounded-3xl px-7 py-5 outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 bg-white border-[4px] border-[#1d2b53] rounded-[26px] px-7 py-5 outline-none text-[#1d2b53] placeholder:text-[#8a94a6]"
 
             onKeyDown={(e) => {
 
@@ -771,7 +896,7 @@ function TeamChat() {
               handleSend
             }
 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-5 rounded-3xl transition-all"
+            className="bg-[#22c55e] text-white px-10 py-5 rounded-[26px] border-[4px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-black hover:translate-y-[2px] transition-all"
 
           >
 

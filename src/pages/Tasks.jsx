@@ -3,6 +3,13 @@ import {
   useState
 } from "react";
 
+import {
+  Plus,
+  ClipboardList,
+  Clock3,
+  CheckCircle2
+} from "lucide-react";
+
 import { supabase }
 from "../services/supabase";
 
@@ -65,7 +72,7 @@ function Tasks() {
     setDueDate] =
       useState("");
 
-  // TEAM LIST
+  // TEAMS
 
   const teams = [
 
@@ -80,8 +87,6 @@ function Tasks() {
   useEffect(() => {
 
     fetchCurrentUser();
-
-    // REALTIME TASKS
 
     const taskChannel =
       supabase
@@ -114,8 +119,6 @@ function Tasks() {
 
         .subscribe();
 
-    // REALTIME COMMENTS
-
     const commentChannel =
       supabase
 
@@ -133,7 +136,8 @@ function Tasks() {
 
             schema: "public",
 
-            table: "task_comments"
+            table:
+              "task_comments"
 
           },
 
@@ -169,7 +173,7 @@ function Tasks() {
 
   }, [selectedTask]);
 
-  // FETCH USER
+  // USER
 
   const fetchCurrentUser =
     async () => {
@@ -212,8 +216,6 @@ function Tasks() {
         data
       );
 
-      // MEMBERS AUTO TEAM
-
       if (
         data.role !==
         "pm"
@@ -226,12 +228,11 @@ function Tasks() {
       }
 
       fetchTasks();
-
       fetchUsers();
 
     };
 
-  // FETCH USERS
+  // USERS
 
   const fetchUsers =
     async () => {
@@ -254,7 +255,7 @@ function Tasks() {
 
     };
 
-  // FETCH TASKS
+  // TASKS
 
   const fetchTasks =
     async () => {
@@ -310,27 +311,17 @@ function Tasks() {
 
           .insert([{
 
-            title:
-              title,
-
-            description:
-              description,
-
+            title,
+            description,
             assigned_to:
               assignedTo,
-
-            priority:
-              priority,
-
+            priority,
             due_date:
               dueDate,
-
             team_name:
               selectedTeam,
-
             status:
               "pending",
-
             created_by:
               currentUser.email
 
@@ -346,12 +337,12 @@ function Tasks() {
 
       }
 
-      // RESET
-
       setTitle("");
       setDescription("");
       setAssignedTo("");
-      setPriority("medium");
+      setPriority(
+        "medium"
+      );
       setDueDate("");
 
       setShowCreate(
@@ -373,10 +364,7 @@ function Tasks() {
         .from("tasks")
 
         .update({
-
-          status:
-            status
-
+          status
         })
 
         .eq(
@@ -475,7 +463,7 @@ function Tasks() {
 
     };
 
-  // FILTER TEAM
+  // FILTERS
 
   const filteredTasks =
     tasks.filter(
@@ -483,8 +471,6 @@ function Tasks() {
         task.team_name ===
         selectedTeam
     );
-
-  // FILTER STATUS
 
   const pending =
     filteredTasks.filter(
@@ -507,23 +493,33 @@ function Tasks() {
         "completed"
     );
 
+  // COLORS
+
+  const teamColors = [
+
+    "bg-[#dcecff]",
+    "bg-[#ffe0f0]",
+    "bg-[#fff5b8]"
+
+  ];
+
   return (
 
-    <div className="h-screen overflow-y-auto bg-[#f5f7fb] p-10 relative">
+    <div className="bg-[#f7f3ea] p-8 space-y-7 relative">
 
       {/* HEADER */}
 
-      <div className="flex items-center justify-between mb-10">
+      <div className="bg-white border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[6px_6px_0px_#1d2b53] flex items-center justify-between">
 
         <div>
 
-          <h1 className="text-4xl font-bold">
+          <h1 className="text-5xl font-black text-[#1d2b53]">
 
             Tasks
 
           </h1>
 
-          <p className="text-gray-500 mt-2">
+          <p className="text-[#5c6b8a] mt-2 text-lg">
 
             Team workflow management
 
@@ -539,16 +535,20 @@ function Tasks() {
             )
           }
 
-          className="bg-blue-600 hover:bg-blue-700 transition-all text-white px-6 py-4 rounded-2xl"
+          className="flex items-center gap-3 bg-[#3b82f6] text-white px-7 py-4 rounded-[22px] border-[4px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-black hover:translate-y-[2px] transition-all"
 
         >
 
+          <Plus size={22} />
+
           {
+
             showCreate
 
             ? "Close"
 
             : "Create Task"
+
           }
 
         </button>
@@ -557,12 +557,15 @@ function Tasks() {
 
       {/* TEAM CARDS */}
 
-      <div className="grid lg:grid-cols-3 gap-5 mb-10">
+      <div className="grid lg:grid-cols-3 gap-5">
 
         {
 
           teams.map(
-            (team) => {
+            (
+              team,
+              index
+            ) => {
 
               const activeCount =
                 tasks.filter(
@@ -577,7 +580,7 @@ function Tasks() {
 
               return (
 
-                <div
+                <button
 
                   key={team}
 
@@ -589,15 +592,23 @@ function Tasks() {
 
                   className={`
 
-                    rounded-3xl p-6 cursor-pointer transition-all shadow-sm
+                    p-7 rounded-[28px]
+                    border-[4px] border-[#1d2b53]
+                    text-left transition-all
 
                     ${
                       selectedTeam ===
                       team
 
-                      ? "bg-blue-600 text-white"
+                      ? "shadow-[6px_6px_0px_#1d2b53] scale-[1.02]"
 
-                      : "bg-white"
+                      : "shadow-[3px_3px_0px_#1d2b53]"
+                    }
+
+                    ${
+                      teamColors[
+                        index
+                      ]
                     }
 
                   `}
@@ -608,47 +619,21 @@ function Tasks() {
 
                     <div>
 
-                      <h2 className="text-2xl font-bold capitalize">
+                      <h2 className="text-3xl font-black capitalize text-[#1d2b53]">
 
                         {team}
 
                       </h2>
 
-                      <p className={`
+                      <p className="text-[#5c6b8a] mt-2">
 
-                        mt-2 text-sm
-
-                        ${
-                          selectedTeam ===
-                          team
-
-                          ? "text-blue-100"
-
-                          : "text-gray-500"
-                        }
-
-                      `}>
-
-                        Active tasks
+                        Active Tasks
 
                       </p>
 
                     </div>
 
-                    <div className={`
-
-                      w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold
-
-                      ${
-                        selectedTeam ===
-                        team
-
-                        ? "bg-white text-blue-600"
-
-                        : "bg-gray-100"
-                      }
-
-                    `}>
+                    <div className="w-16 h-16 rounded-2xl bg-white border-[3px] border-[#1d2b53] flex items-center justify-center text-2xl font-black text-[#1d2b53]">
 
                       {
                         activeCount
@@ -658,7 +643,7 @@ function Tasks() {
 
                   </div>
 
-                </div>
+                </button>
 
               );
 
@@ -675,11 +660,11 @@ function Tasks() {
 
         showCreate && (
 
-          <div className="bg-white rounded-3xl p-8 mb-10 shadow-sm">
+          <div className="bg-[#fff7d6] border-[4px] border-[#1d2b53] rounded-[32px] p-8 shadow-[6px_6px_0px_#1d2b53]">
 
-            <h2 className="text-2xl font-bold mb-6">
+            <h2 className="text-4xl font-black text-[#1d2b53] mb-7">
 
-              Create Task for {selectedTeam}
+              Create Task
 
             </h2>
 
@@ -699,7 +684,7 @@ function Tasks() {
                   )
                 }
 
-                className="border rounded-2xl px-5 py-4 outline-none"
+                className="border-[3px] border-[#1d2b53] rounded-[22px] px-5 py-4 bg-white outline-none"
 
               />
 
@@ -715,7 +700,7 @@ function Tasks() {
                   )
                 }
 
-                className="border rounded-2xl px-5 py-4 outline-none"
+                className="border-[3px] border-[#1d2b53] rounded-[22px] px-5 py-4 bg-white outline-none"
 
               />
 
@@ -731,7 +716,7 @@ function Tasks() {
                   )
                 }
 
-                className="border rounded-2xl px-5 py-4 outline-none lg:col-span-2 h-32 resize-none"
+                className="border-[3px] border-[#1d2b53] rounded-[22px] px-5 py-4 bg-white outline-none lg:col-span-2 h-32 resize-none"
 
               />
 
@@ -745,14 +730,12 @@ function Tasks() {
                   )
                 }
 
-                className="border rounded-2xl px-5 py-4 outline-none"
+                className="border-[3px] border-[#1d2b53] rounded-[22px] px-5 py-4 bg-white outline-none"
 
               >
 
                 <option value="">
-
                   Assign User
-
                 </option>
 
                 {
@@ -795,26 +778,20 @@ function Tasks() {
                   )
                 }
 
-                className="border rounded-2xl px-5 py-4 outline-none"
+                className="border-[3px] border-[#1d2b53] rounded-[22px] px-5 py-4 bg-white outline-none"
 
               >
 
                 <option value="low">
-
                   Low
-
                 </option>
 
                 <option value="medium">
-
                   Medium
-
                 </option>
 
                 <option value="high">
-
                   High
-
                 </option>
 
               </select>
@@ -827,7 +804,7 @@ function Tasks() {
                 createTask
               }
 
-              className="mt-6 bg-blue-600 text-white px-8 py-4 rounded-2xl"
+              className="mt-7 bg-[#3b82f6] text-white px-8 py-4 rounded-[22px] border-[4px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-black hover:translate-y-[2px] transition-all"
 
             >
 
@@ -843,21 +820,30 @@ function Tasks() {
 
       {/* BOARD */}
 
-      <div className="grid lg:grid-cols-3 gap-6 pb-32">
+      <div className="grid lg:grid-cols-3 gap-6 pb-20">
 
         {/* PENDING */}
 
-        <div>
+        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-5">
 
           <div className="flex items-center justify-between mb-5">
 
-            <h2 className="text-2xl font-bold">
+            <div className="flex items-center gap-3">
 
-              Pending
+              <ClipboardList
+                size={26}
+                className="text-[#1d2b53]"
+              />
 
-            </h2>
+              <h2 className="text-2xl font-black text-[#1d2b53]">
 
-            <div className="bg-gray-200 px-3 py-1 rounded-full text-sm">
+                Pending
+
+              </h2>
+
+            </div>
+
+            <div className="px-4 py-2 rounded-full border-[2px] border-[#1d2b53] bg-[#f7f3ea] text-sm font-bold text-[#1d2b53]">
 
               {
                 pending.length
@@ -901,17 +887,26 @@ function Tasks() {
 
         {/* PROGRESS */}
 
-        <div>
+        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-5">
 
           <div className="flex items-center justify-between mb-5">
 
-            <h2 className="text-2xl font-bold">
+            <div className="flex items-center gap-3">
 
-              In Progress
+              <Clock3
+                size={26}
+                className="text-[#1d2b53]"
+              />
 
-            </h2>
+              <h2 className="text-2xl font-black text-[#1d2b53]">
 
-            <div className="bg-yellow-200 px-3 py-1 rounded-full text-sm">
+                In Progress
+
+              </h2>
+
+            </div>
+
+            <div className="px-4 py-2 rounded-full border-[2px] border-[#1d2b53] bg-[#f7f3ea] text-sm font-bold text-[#1d2b53]">
 
               {
                 progress.length
@@ -955,17 +950,26 @@ function Tasks() {
 
         {/* COMPLETED */}
 
-        <div>
+        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-5">
 
           <div className="flex items-center justify-between mb-5">
 
-            <h2 className="text-2xl font-bold">
+            <div className="flex items-center gap-3">
 
-              Completed
+              <CheckCircle2
+                size={26}
+                className="text-[#1d2b53]"
+              />
 
-            </h2>
+              <h2 className="text-2xl font-black text-[#1d2b53]">
 
-            <div className="bg-green-200 px-3 py-1 rounded-full text-sm">
+                Completed
+
+              </h2>
+
+            </div>
+
+            <div className="px-4 py-2 rounded-full border-[2px] border-[#1d2b53] bg-[#f7f3ea] text-sm font-bold text-[#1d2b53]">
 
               {
                 completed.length
@@ -1008,262 +1012,6 @@ function Tasks() {
         </div>
 
       </div>
-
-      {/* DRAWER */}
-
-      {
-
-        selectedTask && (
-
-          <div className="fixed top-0 right-0 w-[450px] h-screen bg-white shadow-2xl z-50 p-8 overflow-y-auto">
-
-            {/* HEADER */}
-
-            <div className="flex items-center justify-between mb-8">
-
-              <h2 className="text-3xl font-bold">
-
-                Task Details
-
-              </h2>
-
-              <button
-
-                onClick={() =>
-                  setSelectedTask(
-                    null
-                  )
-                }
-
-                className="text-3xl"
-
-              >
-
-                ×
-
-              </button>
-
-            </div>
-
-            {/* DETAILS */}
-
-            <div className="space-y-6 mb-10">
-
-              <div>
-
-                <p className="text-sm text-gray-400 mb-2">
-
-                  Title
-
-                </p>
-
-                <h3 className="text-2xl font-bold">
-
-                  {
-                    selectedTask.title
-                  }
-
-                </h3>
-
-              </div>
-
-              <div>
-
-                <p className="text-sm text-gray-400 mb-2">
-
-                  Description
-
-                </p>
-
-                <p className="leading-7 text-gray-700">
-
-                  {
-                    selectedTask.description
-                  }
-
-                </p>
-
-              </div>
-
-              <div className="grid grid-cols-2 gap-5">
-
-                <div>
-
-                  <p className="text-sm text-gray-400 mb-2">
-
-                    Assigned
-
-                  </p>
-
-                  <p>
-
-                    {
-                      selectedTask.assigned_to
-                    }
-
-                  </p>
-
-                </div>
-
-                <div>
-
-                  <p className="text-sm text-gray-400 mb-2">
-
-                    Priority
-
-                  </p>
-
-                  <p className="capitalize">
-
-                    {
-                      selectedTask.priority
-                    }
-
-                  </p>
-
-                </div>
-
-                <div>
-
-                  <p className="text-sm text-gray-400 mb-2">
-
-                    Team
-
-                  </p>
-
-                  <p className="capitalize">
-
-                    {
-                      selectedTask.team_name
-                    }
-
-                  </p>
-
-                </div>
-
-                <div>
-
-                  <p className="text-sm text-gray-400 mb-2">
-
-                    Due Date
-
-                  </p>
-
-                  <p>
-
-                    {
-                      selectedTask.due_date
-                    }
-
-                  </p>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* COMMENTS */}
-
-            <div>
-
-              <h3 className="text-2xl font-bold mb-6">
-
-                Comments
-
-              </h3>
-
-              <div className="space-y-4 mb-6">
-
-                {
-
-                  comments.map(
-                    (comment) => (
-
-                      <div
-
-                        key={comment.id}
-
-                        className="bg-gray-100 rounded-2xl p-4"
-
-                      >
-
-                        <div className="flex items-center justify-between mb-2">
-
-                          <h4 className="font-semibold">
-
-                            {
-                              comment.user_name
-                            }
-
-                          </h4>
-
-                          <span className="text-xs text-gray-400">
-
-                            {
-                              comment.user_role
-                            }
-
-                          </span>
-
-                        </div>
-
-                        <p className="text-sm text-gray-700 leading-6">
-
-                          {
-                            comment.comment
-                          }
-
-                        </p>
-
-                      </div>
-
-                    )
-                  )
-
-                }
-
-              </div>
-
-              {/* INPUT */}
-
-              <textarea
-
-                placeholder="Add comment..."
-
-                value={commentText}
-
-                onChange={(e) =>
-                  setCommentText(
-                    e.target.value
-                  )
-                }
-
-                className="w-full border rounded-2xl p-4 outline-none h-28 resize-none"
-
-              />
-
-              <button
-
-                onClick={
-                  addComment
-                }
-
-                className="w-full mt-4 bg-blue-600 hover:bg-blue-700 transition-all text-white py-4 rounded-2xl"
-
-              >
-
-                Add Comment
-
-              </button>
-
-            </div>
-
-          </div>
-
-        )
-
-      }
 
     </div>
 
