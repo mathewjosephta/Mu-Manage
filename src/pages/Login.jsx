@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState }
+from "react";
 
 import { useNavigate }
 from "react-router-dom";
@@ -33,7 +34,7 @@ function Login() {
 
       setLoading(true);
 
-      // LOGIN USER
+      // LOGIN
 
       const {
 
@@ -71,12 +72,15 @@ function Login() {
         .from("users")
         .select("role")
         .eq("email", email)
-        .maybeSingle();
+        .limit(1);
 
       console.log(roleData);
       console.log(roleError);
 
-      if (!roleData) {
+      if (
+        !roleData ||
+        roleData.length === 0
+      ) {
 
         alert("Role not found");
 
@@ -84,16 +88,26 @@ function Login() {
 
       }
 
-      // ROLE REDIRECT
+      const role =
+        roleData[0].role;
 
-      if (roleData.role === "pm") {
+      // STORE ROLE
+
+      localStorage.setItem(
+        "userRole",
+        role
+      );
+
+      // REDIRECT
+
+      if (role === "pm") {
 
         navigate("/dashboard");
 
       }
 
       else if (
-        roleData.role === "lead"
+        role === "lead"
       ) {
 
         navigate("/calendar");
@@ -101,7 +115,7 @@ function Login() {
       }
 
       else if (
-        roleData.role === "member"
+        role === "member"
       ) {
 
         navigate("/calendar");
