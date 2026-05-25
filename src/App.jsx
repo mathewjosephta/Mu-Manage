@@ -33,6 +33,9 @@ from "./pages/Test";
 import ProtectedRoute
 from "./routes/ProtectedRoute";
 
+import MainLayout
+from "./layouts/MainLayout";
+
 function App() {
 
   const userRole =
@@ -44,6 +47,8 @@ function App() {
 
       <Routes>
 
+        {/* LOGIN */}
+
         <Route
           path="/"
           element={<Login />}
@@ -54,8 +59,9 @@ function App() {
           element={<Test />}
         />
 
+        {/* PM ROUTES */}
+
         <Route
-          path="/dashboard"
           element={
             <ProtectedRoute
 
@@ -65,14 +71,32 @@ function App() {
 
             >
 
-              <Dashboard />
+              <MainLayout />
 
             </ProtectedRoute>
           }
-        />
+        >
+
+          <Route
+            path="/dashboard"
+            element={<Dashboard />}
+          />
+
+          <Route
+            path="/analytics"
+            element={<Analytics />}
+          />
+
+          <Route
+            path="/projects"
+            element={<Projects />}
+          />
+
+        </Route>
+
+        {/* LEAD + MEMBER */}
 
         <Route
-          path="/calendar"
           element={
             <ProtectedRoute
 
@@ -85,31 +109,28 @@ function App() {
 
             >
 
-              <Calendar />
+              <MainLayout />
 
             </ProtectedRoute>
           }
-        />
+        >
 
-        <Route
-          path="/projects"
-          element={<Projects />}
-        />
+          <Route
+            path="/calendar"
+            element={<Calendar />}
+          />
 
-        <Route
-          path="/analytics"
-          element={<Analytics />}
-        />
+          <Route
+            path="/daily-update"
+            element={<DailyUpdate />}
+          />
 
-        <Route
-          path="/daily-update"
-          element={<DailyUpdate />}
-        />
+          <Route
+            path="/linkedin-update"
+            element={<LinkedinUpdate />}
+          />
 
-        <Route
-          path="/linkedin-update"
-          element={<LinkedinUpdate />}
-        />
+        </Route>
 
       </Routes>
 
