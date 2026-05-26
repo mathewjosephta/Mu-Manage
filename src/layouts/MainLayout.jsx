@@ -9,6 +9,18 @@ import {
   useState
 } from "react";
 
+import {
+
+  LayoutDashboard,
+  FolderKanban,
+  CheckSquare,
+  Linkedin,
+  MessageCircle,
+  LogOut,
+  CalendarDays
+
+} from "lucide-react";
+
 import { supabase }
 from "../services/supabase";
 
@@ -20,10 +32,19 @@ function MainLayout() {
   const location =
     useLocation();
 
+  const currentUser =
+    JSON.parse(
+      localStorage.getItem(
+        "user"
+      )
+    ) || {
+
+      role: "pm"
+
+    };
+
   const role =
-    localStorage.getItem(
-      "userRole"
-    );
+    currentUser.role;
 
   const [unreadCount,
     setUnreadCount] =
@@ -38,10 +59,10 @@ function MainLayout() {
         .signOut();
 
       localStorage.removeItem(
-        "userRole"
+        "user"
       );
 
-      navigate("/");
+      navigate("/login");
 
     };
 
@@ -52,187 +73,32 @@ function MainLayout() {
 
       const {
 
-        data: sessionData
-
-      } = await supabase.auth
-        .getUser();
-
-      if (
-        !sessionData?.user
-      ) return;
-
-      const email =
-        sessionData.user.email;
-
-      const {
-
-        data: userData
+        data: messages
 
       } = await supabase
 
-        .from("users")
-
-        .select("*")
-
-        .eq(
-          "email",
-          email
+        .from(
+          "team_messages"
         )
 
-        .single();
-
-      if (!userData)
-        return;
-
-      const user =
-        userData;
-
-      const lastSeenData =
-        JSON.parse(
-
-          localStorage.getItem(
-            "teamLastSeen"
-          ) || "{}"
-
-        );
-
-      let query =
-        supabase
-
-          .from(
-            "team_messages"
-          )
-
-          .select("*");
-
-      if (
-        user.role !==
-        "pm"
-      ) {
-
-        query =
-          query.eq(
-            "team_name",
-            user.team_name
-          );
-
-      }
-
-      const {
-
-        data: messages
-
-      } = await query;
+        .select("*");
 
       if (!messages)
         return;
 
-      if (
-
-        location.pathname ===
-        "/team-chat"
-
-      ) {
-
-        const currentRoom =
-          localStorage.getItem(
-            "currentChatRoom"
-          );
-
-        if (currentRoom) {
-
-          const updated =
-            {
-
-              ...lastSeenData,
-
-              [currentRoom]:
-                new Date()
-                  .toISOString()
-
-            };
-
-          localStorage.setItem(
-
-            "teamLastSeen",
-
-            JSON.stringify(
-              updated
-            )
-
-          );
-
-        }
-
-      }
-
-      let unread = 0;
-
-      messages.forEach(
-        (msg) => {
-
-          if (
-            msg.sender_email ===
-            email
-          ) return;
-
-          const seen =
-            lastSeenData[
-              msg.team_name
-            ];
-
-          if (!seen) {
-
-            unread++;
-
-            return;
-
-          }
-
-          if (
-
-            new Date(
-              msg.created_at
-            ) >
-
-            new Date(
-              seen
-            )
-
-          ) {
-
-            unread++;
-
-          }
-
-        }
-      );
-
       setUnreadCount(
-        unread
+
+        messages.length
+
       );
 
     };
-
-  // AUTO REFRESH
 
   useEffect(() => {
 
     fetchUnreadMessages();
 
-    const interval =
-      setInterval(() => {
-
-        fetchUnreadMessages();
-
-      }, 2000);
-
-    return () =>
-      clearInterval(
-        interval
-      );
-
-  }, [location.pathname]);
+  }, []);
 
   // NAV STYLE
 
@@ -241,15 +107,21 @@ function MainLayout() {
 
       return `
 
-        w-full text-left p-4 rounded-2xl transition-all
+        flex items-center gap-4
+        w-full
+        px-5 py-4
+        rounded-[22px]
+        border-[3px]
+        transition-all
+        font-black
 
         ${
           location.pathname ===
           path
 
-          ? "bg-blue-50 text-blue-600 font-semibold"
+          ? "bg-[#3b82f6] text-white border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53]"
 
-          : "hover:bg-gray-100 text-gray-700"
+          : "bg-white text-[#1d2b53] border-[#1d2b53]"
         }
 
       `;
@@ -258,11 +130,11 @@ function MainLayout() {
 
   return (
 
-    <div className="h-screen flex bg-[#f5f7fb] overflow-hidden">
+    <div className="h-screen flex bg-[#f7f3ea] overflow-hidden">
 
       {/* SIDEBAR */}
 
-      <div className="w-[260px] bg-white border-r p-6 flex flex-col justify-between shrink-0">
+      <div className="w-[290px] bg-white border-r-[4px] border-[#1d2b53] flex flex-col justify-between p-6 shrink-0">
 
         <div>
 
@@ -270,249 +142,253 @@ function MainLayout() {
 
           <div className="mb-10">
 
-            <h1 className="text-3xl font-bold">
+            <div className="bg-[#dcecff] border-[4px] border-[#1d2b53] rounded-[28px] p-6 shadow-[5px_5px_0px_#1d2b53]">
 
-              μManage
+              <h1 className="text-4xl font-black text-[#1d2b53]">
 
-            </h1>
+                μManage
 
-            <p className="text-gray-400 text-sm mt-2">
+              </h1>
 
-              Sprint Workspace
+              <p className="text-[#5c6b8a] mt-2">
 
-            </p>
+                Sprint Workspace
+
+              </p>
+
+            </div>
 
           </div>
 
           {/* NAVIGATION */}
 
-          <div className="space-y-3">
+          <div className="space-y-4">
+
+            {/* DASHBOARD */}
+
+            <button
+
+              onClick={() =>
+                navigate("/")
+              }
+
+              className={navClass(
+                "/"
+              )}
+
+            >
+
+              <LayoutDashboard
+                size={24}
+              />
+
+              Dashboard
+
+            </button>
+
+            {/* PROJECTS */}
 
             {
 
               role === "pm" && (
 
-                <>
+                <button
 
-                  <button
-                    onClick={() =>
-                      navigate(
-                        "/dashboard"
-                      )
-                    }
-                    className={navClass(
-                      "/dashboard"
-                    )}
-                  >
-
-                    Dashboard
-
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      navigate(
-                        "/team-chat"
-                      )
-                    }
-                    className={navClass(
-                      "/team-chat"
-                    )}
-                  >
-
-                    <div className="flex items-center justify-between">
-
-                      <span>
-                        Team Chat
-                      </span>
-
-                      {
-
-                        unreadCount > 0 && (
-
-                          <div className="min-w-[22px] h-[22px] px-2 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-
-                            {
-                              unreadCount
-                            }
-
-                          </div>
-
-                        )
-
-                      }
-
-                    </div>
-
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      navigate(
-                        "/tasks"
-                      )
-                    }
-                    className={navClass(
-                      "/tasks"
-                    )}
-                  >
-
-                    Tasks
-
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      navigate(
-                        "/analytics"
-                      )
-                    }
-                    className={navClass(
-                      "/analytics"
-                    )}
-                  >
-
-                    Analytics
-
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      navigate(
-                        "/projects"
-                      )
-                    }
-                    className={navClass(
+                  onClick={() =>
+                    navigate(
                       "/projects"
-                    )}
-                  >
+                    )
+                  }
 
-                    Projects
+                  className={navClass(
+                    "/projects"
+                  )}
 
-                  </button>
+                >
 
-                </>
+                  <FolderKanban
+                    size={24}
+                  />
+
+                  Projects
+
+                </button>
 
               )
 
             }
 
-            {
+            {/* TASKS */}
 
-              (
-                role ===
-                "lead" ||
+            <button
 
-                role ===
-                "member"
-              ) && (
+              onClick={() =>
+                navigate(
+                  "/tasks"
+                )
+              }
 
-                <>
+              className={navClass(
+                "/tasks"
+              )}
 
-                  <button
-                    onClick={() =>
-                      navigate(
-                        "/calendar"
-                      )
-                    }
-                    className={navClass(
-                      "/calendar"
-                    )}
-                  >
+            >
 
-                    Calendar
+              <CheckSquare
+                size={24}
+              />
 
-                  </button>
+              Tasks
 
-                  <button
-                    onClick={() =>
-                      navigate(
-                        "/team-chat"
-                      )
-                    }
-                    className={navClass(
-                      "/team-chat"
-                    )}
-                  >
+            </button>
 
-                    <div className="flex items-center justify-between">
+            {/* DAILY */}
 
-                      <span>
-                        Team Chat
-                      </span>
+            <button
+
+              onClick={() =>
+                navigate(
+                  "/daily-updates"
+                )
+              }
+
+              className={navClass(
+                "/daily-updates"
+              )}
+
+            >
+
+              <CalendarDays
+                size={24}
+              />
+
+              Daily Updates
+
+            </button>
+
+            {/* LINKEDIN */}
+
+            <button
+
+              onClick={() =>
+                navigate(
+                  "/linkedin-updates"
+                )
+              }
+
+              className={navClass(
+                "/linkedin-updates"
+              )}
+
+            >
+
+              <Linkedin
+                size={24}
+              />
+
+              Linkedin Updates
+
+            </button>
+
+            {/* CHAT */}
+
+            <button
+
+              onClick={() =>
+                navigate(
+                  "/team-chat"
+                )
+              }
+
+              className={navClass(
+                "/team-chat"
+              )}
+
+            >
+
+              <div className="flex items-center justify-between w-full">
+
+                <div className="flex items-center gap-4">
+
+                  <MessageCircle
+                    size={24}
+                  />
+
+                  Team Chat
+
+                </div>
+
+                {
+
+                  unreadCount > 0 && (
+
+                    <div className="min-w-[28px] h-[28px] rounded-full bg-red-500 text-white text-sm flex items-center justify-center">
 
                       {
-
-                        unreadCount > 0 && (
-
-                          <div className="min-w-[22px] h-[22px] px-2 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-
-                            {
-                              unreadCount
-                            }
-
-                          </div>
-
-                        )
-
+                        unreadCount
                       }
 
                     </div>
 
-                  </button>
+                  )
 
-                  <button
-                    onClick={() =>
-                      navigate(
-                        "/tasks"
-                      )
-                    }
-                    className={navClass(
-                      "/tasks"
-                    )}
-                  >
+                }
 
-                    Tasks
+              </div>
 
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      navigate(
-                        "/LinkedIn-update"
-                      )
-                    }
-                    className={navClass(
-                      "/LinkedIn-update"
-                    )}
-                  >
-
-                    LinkedIn Updates
-
-                  </button>
-
-                </>
-
-              )
-
-            }
+            </button>
 
           </div>
 
         </div>
 
-        {/* LOGOUT */}
+        {/* USER */}
 
-        <button
-          onClick={
-            handleLogout
-          }
-          className="bg-red-500 hover:bg-red-600 transition-all text-white py-3 rounded-2xl font-medium"
-        >
+        <div className="space-y-5">
 
-          Logout
+          <div className="bg-[#fff7d6] border-[4px] border-[#1d2b53] rounded-[28px] p-5 shadow-[4px_4px_0px_#1d2b53]">
 
-        </button>
+            <h2 className="text-xl font-black text-[#1d2b53]">
+
+              {
+
+                currentUser.name ||
+
+                "Guest"
+
+              }
+
+            </h2>
+
+            <p className="text-[#5c6b8a] mt-2 capitalize">
+
+              {role}
+
+            </p>
+
+          </div>
+
+          {/* LOGOUT */}
+
+          <button
+
+            onClick={
+              handleLogout
+            }
+
+            className="flex items-center justify-center gap-3 w-full bg-red-500 hover:bg-red-600 transition-all text-white py-5 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[5px_5px_0px_#1d2b53] font-black"
+
+          >
+
+            <LogOut
+              size={22}
+            />
+
+            Logout
+
+          </button>
+
+        </div>
 
       </div>
 

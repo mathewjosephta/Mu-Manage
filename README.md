@@ -68,8 +68,8 @@ A modern team management and productivity platform built for campus teams, stude
 
 ---
 
-## LinkedIn Progress Tracking
-- Weekly LinkedIn update sections
+## Linkedin Progress Tracking
+- Weekly Linkedin update sections
 - Week-wise activity organization
 - Personal growth tracking
 

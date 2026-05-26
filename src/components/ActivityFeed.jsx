@@ -6,7 +6,7 @@ import {
   AlertTriangle,
   Trash2,
   PlusCircle,
-  LinkedIn,
+  Briefcase,
   FolderKanban
 
 } from "lucide-react";
@@ -77,11 +77,11 @@ function ActivityFeed({
 
           );
 
-        case "LinkedIn_update":
+        case "Linkedin_update":
 
           return (
 
-            <LinkedIn
+            <Linkedin
               size={24}
               className="text-[#2563eb]"
             />
@@ -123,7 +123,7 @@ function ActivityFeed({
         case "new_message":
           return "bg-[#fff7d6]";
 
-        case "LinkedIn_update":
+        case "Linkedin_update":
           return "bg-[#dcecff]";
 
         default:

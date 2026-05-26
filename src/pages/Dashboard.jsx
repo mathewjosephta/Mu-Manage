@@ -10,9 +10,9 @@ import {
   CheckCircle2,
   Clock3,
   Activity,
-  Users,
-  LinkedIn,
-  MessageCircle
+  Briefcase,
+  MessageCircle,
+  Users
 
 } from "lucide-react";
 
@@ -46,8 +46,8 @@ function Dashboard() {
     setUpdates] =
       useState([]);
 
-  const [LinkedInUpdates,
-    setLinkedInUpdates] =
+  const [LinkedinUpdates,
+    setLinkedinUpdates] =
       useState([]);
 
   const [activities,
@@ -156,12 +156,12 @@ function Dashboard() {
 
       const {
 
-        data: LinkedInData
+        data: LinkedinData
 
       } = await supabase
 
         .from(
-          "LinkedIn_updates"
+          "Linkedin_updates"
         )
 
         .select("*");
@@ -218,8 +218,8 @@ function Dashboard() {
         updateData || []
       );
 
-      setLinkedInUpdates(
-        LinkedInData || []
+      setLinkedinUpdates(
+        LinkedinData || []
       );
 
       setActivities(
@@ -302,16 +302,16 @@ function Dashboard() {
       }
     );
 
-  // LinkedIn %
+  // Linkedin %
 
-  const LinkedInPercentage =
+  const LinkedinPercentage =
 
     users.length > 0
 
       ? Math.round(
 
           (
-            LinkedInUpdates.length /
+            LinkedinUpdates.length /
             users.length
           ) * 100
 
@@ -680,7 +680,7 @@ function Dashboard() {
 
         </div>
 
-        {/* LinkedIn */}
+        {/* Linkedin */}
 
         <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
 
@@ -688,7 +688,7 @@ function Dashboard() {
 
             <div className="w-16 h-16 rounded-[24px] bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center">
 
-              <LinkedIn
+              <Linkedin
                 size={28}
                 className="text-[#2563eb]"
               />
@@ -699,7 +699,7 @@ function Dashboard() {
 
               <h2 className="text-3xl font-black text-[#1d2b53]">
 
-                Weekly LinkedIn
+                Weekly Linkedin
 
               </h2>
 
@@ -716,7 +716,7 @@ function Dashboard() {
           <h1 className="text-7xl font-black text-[#1d2b53]">
 
             {
-              LinkedInPercentage
+              LinkedinPercentage
             }%
 
           </h1>
