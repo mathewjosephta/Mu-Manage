@@ -4,27 +4,39 @@ import {
 } from "react";
 
 import {
-  useNavigate
-} from "react-router-dom";
 
-import {
-
-  Bell,
-  Plus,
-  Activity,
-  CheckCircle2,
+  FolderKanban,
   AlertTriangle,
-  Clock3
+  CheckCircle2,
+  Clock3,
+  Activity,
+  Users,
+  Linkedin,
+  MessageCircle
 
 } from "lucide-react";
 
 import { supabase }
 from "../services/supabase";
 
+import TeamProgress
+from "../components/TeamProgress";
+
+import ActivityFeed
+from "../components/ActivityFeed";
+
+import NotificationBell
+from "../components/NotificationBell";
+
 function Dashboard() {
 
-  const navigate =
-    useNavigate();
+  const [projects,
+    setProjects] =
+      useState([]);
+
+  const [tasks,
+    setTasks] =
+      useState([]);
 
   const [users,
     setUsers] =
@@ -34,22 +46,27 @@ function Dashboard() {
     setUpdates] =
       useState([]);
 
+  const [linkedinUpdates,
+    setLinkedinUpdates] =
+      useState([]);
+
+  const [activities,
+    setActivities] =
+      useState([]);
+
+  const [notifications,
+    setNotifications] =
+      useState([]);
+
   const [loading,
     setLoading] =
       useState(true);
-
-  // TODAY
-
-  const today =
-    new Date()
-      .toISOString()
-      .split("T")[0];
 
   // FETCH
 
   useEffect(() => {
 
-    fetchDashboardData();
+    fetchData();
 
     const channel =
       supabase
@@ -68,14 +85,13 @@ function Dashboard() {
 
             schema: "public",
 
-            table:
-              "daily_updates"
+            table: "tasks"
 
           },
 
           () => {
 
-            fetchDashboardData();
+            fetchData();
 
           }
 
@@ -93,16 +109,32 @@ function Dashboard() {
 
   }, []);
 
-  const fetchDashboardData =
+  const fetchData =
     async () => {
-
-      setLoading(true);
-
-      // USERS
 
       const {
 
-        data: usersData
+        data: projectData
+
+      } = await supabase
+
+        .from("projects")
+
+        .select("*");
+
+      const {
+
+        data: taskData
+
+      } = await supabase
+
+        .from("tasks")
+
+        .select("*");
+
+      const {
+
+        data: userData
 
       } = await supabase
 
@@ -110,15 +142,54 @@ function Dashboard() {
 
         .select("*");
 
-      // DAILY UPDATES
-
       const {
 
-        data: updatesData
+        data: updateData
 
       } = await supabase
 
         .from("daily_updates")
+
+        .select("*");
+
+      const {
+
+        data: linkedinData
+
+      } = await supabase
+
+        .from(
+          "linkedin_updates"
+        )
+
+        .select("*");
+
+      const {
+
+        data: activityData
+
+      } = await supabase
+
+        .from("activities")
+
+        .select("*")
+
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
+        )
+
+        .limit(15);
+
+      const {
+
+        data: notificationData
+
+      } = await supabase
+
+        .from("notifications")
 
         .select("*")
 
@@ -129,150 +200,197 @@ function Dashboard() {
           }
         );
 
-      if (usersData) {
+      setProjects(
+        projectData || []
+      );
 
-        setUsers(usersData);
+      setTasks(
+        taskData || []
+      );
 
-      }
+      setUsers(
+        userData || []
+      );
 
-      if (updatesData) {
+      setUpdates(
+        updateData || []
+      );
 
-        setUpdates(
-          updatesData
-        );
+      setLinkedinUpdates(
+        linkedinData || []
+      );
 
-      }
+      setActivities(
+        activityData || []
+      );
+
+      setNotifications(
+        notificationData || []
+      );
 
       setLoading(false);
 
     };
 
-  // TODAY UPDATES
+  // COUNTS
 
-  const todayUpdates =
-    updates.filter(
+  const activeTasks =
+    tasks.filter(
+      (task) =>
 
-      (item) =>
-
-        item.update_date ===
-        today
-
+        !task.is_deleted
     );
 
-  // TOTAL MEMBERS
+  const completedTasks =
+    activeTasks.filter(
+      (task) =>
+        task.status ===
+        "done"
+    );
 
-  const totalMembers =
-    users.filter(
+  const reviewTasks =
+    activeTasks.filter(
+      (task) =>
+        task.status ===
+        "under review"
+    );
 
-      (user) =>
-
-        user.role !==
-        "pm"
-
-    ).length;
-
-  // TOTAL SUBMITTED
-
-  const totalSubmitted =
-    todayUpdates.length;
-
-  // PENDING MEMBERS
-
-  const pendingMembers =
-    users.filter(
-      (user) => {
+  const overdueTasks =
+    activeTasks.filter(
+      (task) => {
 
         if (
-          user.role ===
-          "pm"
+          task.status ===
+          "done"
         ) return false;
 
-        return !todayUpdates.find(
+        return (
 
-          (update) =>
-
-            update.user_email ===
-            user.email
+          new Date(
+            task.due_date
+          ) < new Date()
 
         );
 
       }
     );
 
-  // TEAMS
+  // TODAY UPDATES
 
-  const teams = [
+  const today =
+    new Date()
+      .toISOString()
+      .split("T")[0];
 
-    "canteen",
-    "printing",
-    "campus"
+  const todayUpdates =
+    updates.filter(
+      (update) => {
 
-  ];
+        const date =
+          new Date(
+            update.created_at
+          )
 
-  // TEAM PROGRESS
+            .toISOString()
+            .split("T")[0];
 
-  const teamProgress =
-    teams.map(
-      (team) => {
-
-        const teamUsers =
-          users.filter(
-
-            (user) =>
-
-              user.team_name ===
-              team
-
-          );
-
-        const teamUpdates =
-          todayUpdates.filter(
-
-            (update) =>
-
-              update.team_name ===
-              team
-
-          );
-
-        const percentage =
-          teamUsers.length > 0
-
-            ? Math.round(
-
-                (
-                  teamUpdates.length /
-
-                  teamUsers.length
-
-                ) * 100
-
-              )
-
-            : 0;
-
-        return {
-
-          team,
-          percentage
-
-        };
+        return (
+          date === today
+        );
 
       }
     );
 
-  // RECENT
+  // LINKEDIN %
 
-  const recentUpdates =
-    updates.slice(0, 5);
+  const linkedinPercentage =
+
+    users.length > 0
+
+      ? Math.round(
+
+          (
+            linkedinUpdates.length /
+            users.length
+          ) * 100
+
+        )
+
+      : 0;
+
+  // NOTIFICATION FUNCTIONS
+
+  const markAsRead =
+    async (id) => {
+
+      await supabase
+
+        .from(
+          "notifications"
+        )
+
+        .update({
+
+          is_read: true
+
+        })
+
+        .eq("id", id);
+
+      fetchData();
+
+    };
+
+  const markAllAsRead =
+    async () => {
+
+      await supabase
+
+        .from(
+          "notifications"
+        )
+
+        .update({
+
+          is_read: true
+
+        })
+
+        .eq(
+          "is_read",
+          false
+        );
+
+      fetchData();
+
+    };
+
+  const deleteNotification =
+    async (id) => {
+
+      await supabase
+
+        .from(
+          "notifications"
+        )
+
+        .delete()
+
+        .eq("id", id);
+
+      fetchData();
+
+    };
+
+  // LOADING
 
   if (loading) {
 
     return (
 
-      <div className="flex items-center justify-center h-[80vh]">
+      <div className="h-screen bg-[#f7f3ea] flex items-center justify-center">
 
-        <h1 className="text-3xl font-bold text-[#1d2b53]">
+        <h1 className="text-5xl font-black text-[#1d2b53]">
 
           Loading Dashboard...
 
@@ -286,243 +404,389 @@ function Dashboard() {
 
   return (
 
-    <div className="space-y-6">
+    <div className="min-h-screen bg-[#f7f3ea] p-8">
 
-      {/* TOPBAR */}
+      {/* HEADER */}
 
-      <div className="bg-white border-[3px] border-[#1d2b53] rounded-[28px] p-6 shadow-[5px_5px_0px_#1d2b53] flex items-center justify-between">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6 mb-8">
 
         <div>
 
-          <h1 className="text-5xl font-black text-[#1d2b53]">
+          <h1 className="text-6xl font-black text-[#1d2b53]">
 
-            Dashboard
+            Project Dashboard
 
           </h1>
 
-          <p className="text-[#5c6b8a] mt-2 text-lg">
+          <p className="text-[#5c6b8a] mt-3 text-xl">
 
-            Team monitoring & sprint tracking
+            Realtime sprint analytics & workflow management
 
           </p>
 
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* RIGHT */}
 
-          {/* NOTIFICATION */}
+        <div className="flex items-center gap-5">
 
-          <button
+          {/* LIVE */}
 
-            onClick={() =>
-              navigate("/team-chat")
+          <div className="bg-[#d8f7df] border-[4px] border-[#1d2b53] rounded-full px-7 py-4 shadow-[5px_5px_0px_#1d2b53] flex items-center gap-4">
+
+            <div className="w-4 h-4 rounded-full bg-[#22c55e] animate-pulse"></div>
+
+            <span className="font-black text-[#1d2b53]">
+
+              LIVE SYSTEM
+
+            </span>
+
+          </div>
+
+          {/* NOTIFICATIONS */}
+
+          <NotificationBell
+
+            notifications={
+              notifications
             }
 
-            className="relative w-14 h-14 rounded-2xl bg-[#fff5b8] border-[3px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] flex items-center justify-center hover:translate-y-[2px] transition-all"
-
-          >
-
-            <Bell
-              size={24}
-              className="text-[#1d2b53]"
-            />
-
-            {
-
-              pendingMembers.length > 0 && (
-
-                <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-pink-500 border-[2px] border-[#1d2b53] text-white text-xs flex items-center justify-center font-bold">
-
-                  {
-                    pendingMembers.length
-                  }
-
-                </div>
-
-              )
-
+            markAsRead={
+              markAsRead
             }
 
-          </button>
-
-          {/* NEW TASK */}
-
-          <button
-
-            onClick={() =>
-              navigate("/tasks")
+            markAllAsRead={
+              markAllAsRead
             }
 
-            className="flex items-center gap-2 bg-[#3b82f6] text-white px-6 py-3 rounded-2xl border-[3px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-bold hover:translate-y-[2px] transition-all"
+            deleteNotification={
+              deleteNotification
+            }
 
-          >
-
-            <Plus size={20} />
-
-            New Task
-
-          </button>
+          />
 
         </div>
 
       </div>
 
-      {/* STATS */}
+      {/* OVERVIEW */}
 
-      <div className="grid grid-cols-4 gap-5">
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
 
-        {/* CARD */}
+        {/* PROJECTS */}
 
-        <div className="bg-[#dcecff] border-[3px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-6">
-
-          <div className="flex items-center justify-between mb-6">
-
-            <div className="w-14 h-14 rounded-2xl bg-[#3b82f6] border-[3px] border-[#1d2b53] flex items-center justify-center">
-
-              <Activity
-                size={24}
-                className="text-white"
-              />
-
-            </div>
-
-            <div className="px-4 py-1 rounded-full bg-white border-[2px] border-[#1d2b53] text-sm font-bold">
-
-              Active
-
-            </div>
-
-          </div>
-
-          <p className="text-[#4b5d7e] font-semibold mb-2">
-
-            Submitted Today
-
-          </p>
-
-          <h1 className="text-5xl font-black text-[#1d2b53]">
-
-            {totalSubmitted}
-
-            <span className="text-2xl text-gray-400">
-
-              /{totalMembers}
-
-            </span>
-
-          </h1>
-
-        </div>
-
-        {/* CARD */}
-
-        <div className="bg-[#d8f7df] border-[3px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-6">
+        <div className="bg-[#dcecff] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
 
           <div className="flex items-center justify-between mb-6">
 
-            <div className="w-14 h-14 rounded-2xl bg-[#22c55e] border-[3px] border-[#1d2b53] flex items-center justify-center">
+            <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
 
-              <CheckCircle2
-                size={24}
-                className="text-white"
-              />
-
-            </div>
-
-            <div className="px-4 py-1 rounded-full bg-white border-[2px] border-[#1d2b53] text-sm font-bold">
-
-              Updated
-
-            </div>
-
-          </div>
-
-          <p className="text-[#4b5d7e] font-semibold mb-2">
-
-            Teams Active
-
-          </p>
-
-          <h1 className="text-5xl font-black text-[#1d2b53]">
-
-            3
-
-          </h1>
-
-        </div>
-
-        {/* CARD */}
-
-        <div className="bg-[#ffe0f0] border-[3px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-6">
-
-          <div className="flex items-center justify-between mb-6">
-
-            <div className="w-14 h-14 rounded-2xl bg-[#ec4899] border-[3px] border-[#1d2b53] flex items-center justify-center">
-
-              <AlertTriangle
-                size={24}
-                className="text-white"
-              />
-
-            </div>
-
-            <div className="px-4 py-1 rounded-full bg-white border-[2px] border-[#1d2b53] text-sm font-bold">
-
-              Attention
-
-            </div>
-
-          </div>
-
-          <p className="text-[#4b5d7e] font-semibold mb-2">
-
-            Pending Members
-
-          </p>
-
-          <h1 className="text-5xl font-black text-[#1d2b53]">
-
-            {
-              pendingMembers.length
-            }
-
-          </h1>
-
-        </div>
-
-        {/* CARD */}
-
-        <div className="bg-[#fff5b8] border-[3px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-6">
-
-          <div className="flex items-center justify-between mb-6">
-
-            <div className="w-14 h-14 rounded-2xl bg-[#facc15] border-[3px] border-[#1d2b53] flex items-center justify-center">
-
-              <Clock3
-                size={24}
+              <FolderKanban
+                size={30}
                 className="text-[#1d2b53]"
               />
 
             </div>
 
-            <div className="px-4 py-1 rounded-full bg-white border-[2px] border-[#1d2b53] text-sm font-bold">
+            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
 
-              Live
+              Projects
 
             </div>
 
           </div>
 
-          <p className="text-[#4b5d7e] font-semibold mb-2">
+          <p className="text-[#5c6b8a] font-bold">
 
-            Recent Updates
+            Active Projects
 
           </p>
 
-          <h1 className="text-5xl font-black text-[#1d2b53]">
+          <h2 className="text-6xl font-black text-[#1d2b53] mt-3">
 
             {
-              recentUpdates.length
+              projects.length
+            }
+
+          </h2>
+
+        </div>
+
+        {/* DONE */}
+
+        <div className="bg-[#d8f7df] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+
+          <div className="flex items-center justify-between mb-6">
+
+            <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+              <CheckCircle2
+                size={30}
+                className="text-[#22c55e]"
+              />
+
+            </div>
+
+            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
+
+              Done
+
+            </div>
+
+          </div>
+
+          <p className="text-[#5c6b8a] font-bold">
+
+            Completed Tasks
+
+          </p>
+
+          <h2 className="text-6xl font-black text-[#1d2b53] mt-3">
+
+            {
+
+              completedTasks.length
+
+            }
+
+          </h2>
+
+        </div>
+
+        {/* REVIEW */}
+
+        <div className="bg-[#fff5b8] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+
+          <div className="flex items-center justify-between mb-6">
+
+            <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+              <Clock3
+                size={30}
+                className="text-[#f59e0b]"
+              />
+
+            </div>
+
+            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
+
+              Review
+
+            </div>
+
+          </div>
+
+          <p className="text-[#5c6b8a] font-bold">
+
+            Pending Reviews
+
+          </p>
+
+          <h2 className="text-6xl font-black text-[#1d2b53] mt-3">
+
+            {
+              reviewTasks.length
+            }
+
+          </h2>
+
+        </div>
+
+        {/* RISKS */}
+
+        <div className="bg-[#ffe0f0] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+
+          <div className="flex items-center justify-between mb-6">
+
+            <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+              <AlertTriangle
+                size={30}
+                className="text-red-500"
+              />
+
+            </div>
+
+            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
+
+              Risk
+
+            </div>
+
+          </div>
+
+          <p className="text-[#5c6b8a] font-bold">
+
+            Overdue Tasks
+
+          </p>
+
+          <h2 className="text-6xl font-black text-[#1d2b53] mt-3">
+
+            {
+              overdueTasks.length
+            }
+
+          </h2>
+
+        </div>
+
+      </div>
+
+      {/* SECOND ROW */}
+
+      <div className="grid xl:grid-cols-3 gap-7 mb-8">
+
+        {/* DAILY UPDATES */}
+
+        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+
+          <div className="flex items-center gap-4 mb-6">
+
+            <div className="w-16 h-16 rounded-[24px] bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+              <Activity
+                size={28}
+                className="text-[#1d2b53]"
+              />
+
+            </div>
+
+            <div>
+
+              <h2 className="text-3xl font-black text-[#1d2b53]">
+
+                Daily Updates
+
+              </h2>
+
+              <p className="text-[#5c6b8a]">
+
+                Today submissions
+
+              </p>
+
+            </div>
+
+          </div>
+
+          <h1 className="text-7xl font-black text-[#1d2b53]">
+
+            {
+              todayUpdates.length
+            }
+
+          </h1>
+
+          <p className="text-[#5c6b8a] mt-3">
+
+            out of
+            {" "}
+            {
+              users.length
+            }
+            {" "}
+            members
+
+          </p>
+
+        </div>
+
+        {/* LINKEDIN */}
+
+        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+
+          <div className="flex items-center gap-4 mb-6">
+
+            <div className="w-16 h-16 rounded-[24px] bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+              <Linkedin
+                size={28}
+                className="text-[#2563eb]"
+              />
+
+            </div>
+
+            <div>
+
+              <h2 className="text-3xl font-black text-[#1d2b53]">
+
+                Weekly LinkedIn
+
+              </h2>
+
+              <p className="text-[#5c6b8a]">
+
+                Submission progress
+
+              </p>
+
+            </div>
+
+          </div>
+
+          <h1 className="text-7xl font-black text-[#1d2b53]">
+
+            {
+              linkedinPercentage
+            }%
+
+          </h1>
+
+          <div className="w-full h-6 rounded-full bg-[#e7ecf5] border-[3px] border-[#1d2b53] overflow-hidden mt-6">
+
+            <div
+
+              className="h-full bg-[#2563eb]"
+
+              style={{
+                width: `${linkedinPercentage}%`
+              }}
+
+            />
+
+          </div>
+
+        </div>
+
+        {/* ACTIVE USERS */}
+
+        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+
+          <div className="flex items-center gap-4 mb-6">
+
+            <div className="w-16 h-16 rounded-[24px] bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+              <Users
+                size={28}
+                className="text-[#1d2b53]"
+              />
+
+            </div>
+
+            <div>
+
+              <h2 className="text-3xl font-black text-[#1d2b53]">
+
+                Team Members
+
+              </h2>
+
+              <p className="text-[#5c6b8a]">
+
+                System users
+
+              </p>
+
+            </div>
+
+          </div>
+
+          <h1 className="text-7xl font-black text-[#1d2b53]">
+
+            {
+              users.length
             }
 
           </h1>
@@ -531,215 +795,171 @@ function Dashboard() {
 
       </div>
 
-      {/* MAIN */}
+      {/* TEAM PROGRESS */}
 
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid xl:grid-cols-3 gap-7 mb-8">
 
-        {/* TEAM PROGRESS */}
+        {
 
-        <div className="col-span-2 bg-white border-[3px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-6">
+          [
 
-          <h2 className="text-3xl font-black text-[#1d2b53] mb-8">
+            "canteen",
+            "printer",
+            "campus connect"
 
-            Team Progress
+          ].map(
+            (team) => (
 
-          </h2>
+              <TeamProgress
 
-          <div className="space-y-7">
+                key={team}
 
-            {
+                teamName={
+                  team
+                }
 
-              teamProgress.map(
-                (team) => (
+                tasks={
+                  tasks
+                }
 
-                  <div
-                    key={team.team}
-                  >
+                members={
+                  users
+                }
 
-                    <div className="flex items-center justify-between mb-3">
+                updates={
+                  updates
+                }
 
-                      <p className="capitalize text-lg font-bold text-[#1d2b53]">
+              />
 
-                        {team.team}
+            )
+          )
 
-                      </p>
-
-                      <p className="font-bold text-[#4b5d7e]">
-
-                        {
-                          team.percentage
-                        }%
-
-                      </p>
-
-                    </div>
-
-                    <div className="w-full h-5 rounded-full bg-[#e5e7eb] border-[2px] border-[#1d2b53] overflow-hidden">
-
-                      <div
-
-                        className="h-full bg-[#3b82f6]"
-
-                        style={{
-                          width: `${team.percentage}%`
-                        }}
-
-                      />
-
-                    </div>
-
-                  </div>
-
-                )
-              )
-
-            }
-
-          </div>
-
-        </div>
-
-        {/* PENDING */}
-
-        <div className="bg-[#ffe0f0] border-[3px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-6">
-
-          <h2 className="text-3xl font-black text-[#d61f69] mb-7">
-
-            Pending Members
-
-          </h2>
-
-          <div className="space-y-4">
-
-            {
-
-              pendingMembers.length === 0 && (
-
-                <div className="bg-white border-[3px] border-[#1d2b53] rounded-2xl p-4 font-semibold text-green-600">
-
-                  All updates submitted
-
-                </div>
-
-              )
-
-            }
-
-            {
-
-              pendingMembers.map(
-                (member) => (
-
-                  <button
-
-                    key={member.id}
-
-                    onClick={() =>
-                      navigate("/calendar")
-                    }
-
-                    className="w-full bg-white border-[3px] border-[#1d2b53] rounded-2xl p-4 flex items-center justify-between hover:bg-[#fff5f8] transition-all text-left"
-
-                  >
-
-                    <div>
-
-                      <h3 className="font-bold text-[#1d2b53]">
-
-                        {
-                          member.name
-                        }
-
-                      </h3>
-
-                      <p className="text-sm text-[#5c6b8a] capitalize">
-
-                        {
-                          member.team_name
-                        }
-
-                      </p>
-
-                    </div>
-
-                    <div className="w-4 h-4 rounded-full bg-red-500 border-[2px] border-[#1d2b53]" />
-
-                  </button>
-
-                )
-              )
-
-            }
-
-          </div>
-
-        </div>
+        }
 
       </div>
 
-      {/* RECENT */}
+      {/* ACTIVITY + RISKS */}
 
-      <div className="bg-white border-[3px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-6">
+      <div className="grid xl:grid-cols-[1fr_400px] gap-8">
 
-        <h2 className="text-3xl font-black text-[#1d2b53] mb-8">
+        {/* FEED */}
 
-          Recent Updates
+        <ActivityFeed
 
-        </h2>
+          activities={
+            activities
+          }
 
-        <div className="space-y-4">
+        />
 
-          {
+        {/* RISKS */}
 
-            recentUpdates.map(
-              (update) => (
+        <div className="space-y-6">
 
-                <button
+          {/* ALERTS */}
 
-                  key={update.id}
+          <div className="bg-[#ffe0f0] border-[4px] border-red-500 rounded-[34px] p-7 shadow-[6px_6px_0px_#ef4444]">
 
-                  onClick={() =>
-                    navigate("/calendar")
-                  }
+            <div className="flex items-center gap-4 mb-6">
 
-                  className="w-full text-left border-[3px] border-[#1d2b53] rounded-2xl p-5 bg-[#f8fafc] hover:bg-[#eef4ff] transition-all"
+              <AlertTriangle
+                size={34}
+                className="text-red-600"
+              />
 
-                >
+              <h2 className="text-4xl font-black text-red-600">
 
-                  <div className="flex items-center justify-between mb-2">
+                Risk Alerts
 
-                    <h3 className="font-bold text-lg text-[#1d2b53]">
+              </h2>
 
-                      {
-                        update.user_email
-                      }
+            </div>
 
-                    </h3>
+            <div className="space-y-5">
 
-                    <p className="text-sm text-[#5c6b8a]">
+              {
 
-                      {
-                        update.update_date
-                      }
+                overdueTasks.length === 0 && (
+
+                  <div className="bg-white border-[3px] border-[#1d2b53] rounded-[24px] p-5">
+
+                    <p className="font-black text-[#1d2b53]">
+
+                      No sprint risks detected.
 
                     </p>
 
                   </div>
 
-                  <p className="text-[#4b5d7e] leading-7">
+                )
 
-                    {
-                      update.task_summary
-                    }
+              }
 
-                  </p>
+              {
 
-                </button>
+                overdueTasks.map(
+                  (task) => (
 
-              )
-            )
+                    <div
 
-          }
+                      key={task.id}
+
+                      className="bg-white border-[3px] border-red-500 rounded-[24px] p-5"
+
+                    >
+
+                      <h3 className="text-xl font-black text-red-600">
+
+                        {
+                          task.title
+                        }
+
+                      </h3>
+
+                      <p className="text-red-500 mt-2 leading-7">
+
+                        Overdue task affecting sprint progress.
+
+                      </p>
+
+                    </div>
+
+                  )
+                )
+
+              }
+
+            </div>
+
+          </div>
+
+          {/* CHAT */}
+
+          <div className="bg-[#dcecff] border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+
+            <div className="flex items-center gap-4 mb-5">
+
+              <MessageCircle
+                size={30}
+                className="text-[#1d2b53]"
+              />
+
+              <h2 className="text-3xl font-black text-[#1d2b53]">
+
+                Team Chat
+
+              </h2>
+
+            </div>
+
+            <p className="text-[#5c6b8a] leading-8">
+
+              Realtime communication enabled across all sprint teams.
+
+            </p>
+
+          </div>
 
         </div>
 
