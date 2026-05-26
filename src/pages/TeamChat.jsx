@@ -4,8 +4,23 @@ import {
   useState
 } from "react";
 
+import {
+
+  Send,
+  Image,
+  Paperclip,
+  Search,
+  Users,
+  MessageCircle,
+  Trash2
+
+} from "lucide-react";
+
 import { supabase }
 from "../services/supabase";
+
+import ChatBubble
+from "../components/ChatBubble";
 
 function TeamChat() {
 
@@ -13,150 +28,125 @@ function TeamChat() {
     setMessages] =
       useState([]);
 
-  const [message,
-    setMessage] =
-      useState("");
-
-  const [currentUser,
-    setCurrentUser] =
-      useState(null);
-
-  const [selectedTeam,
-    setSelectedTeam] =
-      useState("");
+  const [users,
+    setUsers] =
+      useState([]);
 
   const [loading,
     setLoading] =
       useState(true);
 
-  const [teamUnread,
-    setTeamUnread] =
-      useState({});
+  const [message,
+    setMessage] =
+      useState("");
 
-  const bottomRef =
+  const [selectedTeam,
+    setSelectedTeam] =
+      useState("all");
+
+  const [search,
+    setSearch] =
+      useState("");
+
+  const messagesEndRef =
     useRef(null);
 
-  // TEAMS
+  const fileInputRef =
+    useRef(null);
 
-  const teams = [
+  // USER
 
-    "canteen",
-    "printer",
-    "campus connect"
+  const currentUser =
+    JSON.parse(
+      localStorage.getItem(
+        "user"
+      )
+    );
 
-  ];
-
-  // FETCH USER
+  // FETCH
 
   useEffect(() => {
 
-    fetchCurrentUser();
+    fetchData();
 
-  }, []);
+    const channel =
+      supabase
 
-  const fetchCurrentUser =
-    async () => {
+        .channel(
+          "team-chat-live"
+        )
 
-      const {
+        .on(
 
-        data: sessionData
+          "postgres_changes",
 
-      } = await supabase.auth
-        .getUser();
+          {
 
-      const email =
-        sessionData.user.email;
+            event: "*",
 
-      const {
+            schema: "public",
 
-        data
+            table:
+              "team_messages"
 
-      } = await supabase
+          },
 
-        .from("users")
+          () => {
 
-        .select("*")
+            fetchData();
 
-        .eq("email", email)
+          }
 
-        .limit(1);
+        )
 
-      if (
+        .subscribe();
 
-        data &&
-        data.length > 0
+    return () => {
 
-      ) {
-
-        const user =
-          data[0];
-
-        setCurrentUser(
-          user
-        );
-
-        // PM
-
-        if (
-          user.role ===
-          "pm"
-        ) {
-
-          setSelectedTeam(
-            "canteen"
-          );
-
-          fetchMessages(
-            "canteen"
-          );
-
-        }
-
-        // MEMBER
-
-        else {
-
-          setSelectedTeam(
-            user.team_name
-          );
-
-          fetchMessages(
-            user.team_name
-          );
-
-        }
-
-        fetchUnreadCounts(
-          user
-        );
-
-      }
-
-      setLoading(false);
+      supabase.removeChannel(
+        channel
+      );
 
     };
 
-  // FETCH MESSAGES
+  }, []);
 
-  const fetchMessages =
-    async (
-      roomTeam
-    ) => {
+  // AUTO SCROLL
+
+  useEffect(() => {
+
+    scrollToBottom();
+
+  }, [messages]);
+
+  const scrollToBottom =
+    () => {
+
+      messagesEndRef.current
+        ?.scrollIntoView({
+
+          behavior: "smooth"
+
+        });
+
+    };
+
+  const fetchData =
+    async () => {
+
+      setLoading(true);
 
       const {
 
-        data
+        data: messageData
 
       } = await supabase
 
-        .from("team_messages")
+        .from(
+          "team_messages"
+        )
 
         .select("*")
-
-        .eq(
-          "team_name",
-          roomTeam
-        )
 
         .order(
           "created_at",
@@ -165,272 +155,31 @@ function TeamChat() {
           }
         );
 
-      if (data) {
-
-        setMessages(data);
-
-      }
-
-    };
-
-  // UNREAD COUNTS
-
-  const fetchUnreadCounts =
-    async (user) => {
-
-      const lastSeen =
-        JSON.parse(
-
-          localStorage.getItem(
-            "teamLastSeen"
-          ) || "{}"
-
-        );
-
       const {
 
-        data
+        data: userData
 
       } = await supabase
 
-        .from(
-          "team_messages"
-        )
+        .from("users")
 
         .select("*");
 
-      if (!data)
-        return;
-
-      const unreadMap =
-        {};
-
-      // PM
-
-      if (
-        user.role ===
-        "pm"
-      ) {
-
-        teams.forEach(
-          (team) => {
-
-            const unread =
-              data.filter(
-                (msg) => {
-
-                  if (
-                    msg.team_name !==
-                    team
-                  ) {
-
-                    return false;
-
-                  }
-
-                  if (
-                    msg.sender_email ===
-                    user.email
-                  ) {
-
-                    return false;
-
-                  }
-
-                  const seen =
-                    lastSeen[
-                      team
-                    ];
-
-                  if (!seen)
-                    return true;
-
-                  return (
-
-                    new Date(
-                      msg.created_at
-                    ) >
-
-                    new Date(
-                      seen
-                    )
-
-                  );
-
-                }
-              );
-
-            unreadMap[
-              team
-            ] =
-              unread.length;
-
-          }
-        );
-
-      }
-
-      // MEMBER
-
-      else {
-
-        const unread =
-          data.filter(
-            (msg) => {
-
-              if (
-                msg.team_name !==
-                user.team_name
-              ) {
-
-                return false;
-
-              }
-
-              if (
-                msg.sender_email ===
-                user.email
-              ) {
-
-                return false;
-
-              }
-
-              const seen =
-                lastSeen[
-                  user.team_name
-                ];
-
-              if (!seen)
-                return true;
-
-              return (
-
-                new Date(
-                  msg.created_at
-                ) >
-
-                new Date(
-                  seen
-                )
-
-              );
-
-            }
-          );
-
-        unreadMap[
-          user.team_name
-        ] =
-          unread.length;
-
-      }
-
-      setTeamUnread(
-        unreadMap
+      setMessages(
+        messageData || []
       );
+
+      setUsers(
+        userData || []
+      );
+
+      setLoading(false);
 
     };
 
-  // AUTO REFRESH
-
-  useEffect(() => {
-
-    if (
-      !currentUser ||
-      !selectedTeam
-    ) return;
-
-    const interval =
-      setInterval(() => {
-
-        fetchMessages(
-          selectedTeam
-        );
-
-        fetchUnreadCounts(
-          currentUser
-        );
-
-      }, 2000);
-
-    return () =>
-      clearInterval(
-        interval
-      );
-
-  }, [
-
-    currentUser,
-    selectedTeam
-
-  ]);
-
-  // AUTO SCROLL
-
-  useEffect(() => {
-
-    bottomRef.current?.
-      scrollIntoView({
-
-        behavior:
-          "smooth"
-
-      });
-
-  }, [messages]);
-
-  // MARK READ
-
-  useEffect(() => {
-
-    if (!selectedTeam)
-      return;
-
-    const stored =
-      JSON.parse(
-
-        localStorage.getItem(
-          "teamLastSeen"
-        ) || "{}"
-
-      );
-
-    stored[
-      selectedTeam
-    ] =
-      new Date().toISOString();
-
-    localStorage.setItem(
-
-      "teamLastSeen",
-
-      JSON.stringify(
-        stored
-      )
-
-    );
-
-    if (
-      currentUser
-    ) {
-
-      fetchUnreadCounts(
-        currentUser
-      );
-
-    }
-
-  }, [
-
-    selectedTeam,
-    messages
-
-  ]);
-
   // SEND MESSAGE
 
-  const handleSend =
+  const sendMessage =
     async () => {
 
       if (!message.trim())
@@ -454,33 +203,199 @@ function TeamChat() {
             currentUser.role,
 
           team_name:
-            selectedTeam,
 
-          message:
-            message
+            selectedTeam ===
+            "all"
+
+              ? "all"
+
+              : currentUser.team_name,
+
+          message,
+
+          is_read: false
 
         }]);
 
       setMessage("");
 
-      fetchMessages(
-        selectedTeam
-      );
+      fetchData();
 
     };
 
-  // TOTAL UNREAD
+  // DELETE
 
-  const totalUnread =
-    Object.values(
-      teamUnread
-    ).reduce(
+  const deleteMessage =
+    async (id) => {
 
-      (a, b) => a + b,
+      const confirmDelete =
+        window.confirm(
+          "Delete this message?"
+        );
 
-      0
+      if (!confirmDelete)
+        return;
 
+      await supabase
+
+        .from(
+          "team_messages"
+        )
+
+        .delete()
+
+        .eq("id", id);
+
+      fetchData();
+
+    };
+
+  // FILE
+
+  const uploadFile =
+    async (event) => {
+
+      const file =
+        event.target.files[0];
+
+      if (!file)
+        return;
+
+      const fileName =
+
+        `${Date.now()}-${file.name}`;
+
+      const {
+
+        data,
+        error
+
+      } = await supabase
+
+        .storage
+
+        .from("chat-files")
+
+        .upload(
+
+          fileName,
+          file
+        );
+
+      if (error)
+        return;
+
+      const {
+
+        data: publicUrl
+
+      } = supabase
+
+        .storage
+
+        .from("chat-files")
+
+        .getPublicUrl(
+          fileName
+        );
+
+      await supabase
+
+        .from(
+          "team_messages"
+        )
+
+        .insert([{
+
+          sender_name:
+            currentUser.name,
+
+          sender_email:
+            currentUser.email,
+
+          sender_role:
+            currentUser.role,
+
+          team_name:
+
+            selectedTeam ===
+            "all"
+
+              ? "all"
+
+              : currentUser.team_name,
+
+          message:
+            "Uploaded a file",
+
+          file_url:
+            publicUrl.publicUrl
+
+        }]);
+
+      fetchData();
+
+    };
+
+  // FILTER
+
+  const filteredMessages =
+
+    messages.filter(
+      (msg) => {
+
+        const matchesTeam =
+
+          selectedTeam ===
+          "all"
+
+            ? true
+
+            : msg.team_name ===
+              selectedTeam;
+
+        const matchesSearch =
+
+          msg.sender_name
+            ?.toLowerCase()
+
+            .includes(
+              search.toLowerCase()
+            ) ||
+
+          msg.message
+            ?.toLowerCase()
+
+            .includes(
+              search.toLowerCase()
+            );
+
+        return (
+
+          matchesTeam &&
+          matchesSearch
+
+        );
+
+      }
     );
+
+  // TEAMS
+
+  const teams = [
+
+    "all",
+
+    ...new Set(
+
+      users.map(
+        (user) =>
+          user.team_name
+      )
+
+    )
+
+  ];
 
   // LOADING
 
@@ -488,11 +403,11 @@ function TeamChat() {
 
     return (
 
-      <div className="h-screen flex items-center justify-center bg-[#f7f3ea]">
+      <div className="h-screen bg-[#f7f3ea] flex items-center justify-center">
 
-        <h1 className="text-3xl font-black text-[#1d2b53]">
+        <h1 className="text-5xl font-black text-[#1d2b53]">
 
-          Loading chat...
+          Loading Chat...
 
         </h1>
 
@@ -504,79 +419,84 @@ function TeamChat() {
 
   return (
 
-    <div className="h-screen bg-[#f7f3ea] flex flex-col overflow-hidden">
+    <div className="h-screen bg-[#f7f3ea] p-6 overflow-hidden">
 
-      {/* HEADER */}
+      <div className="h-full grid xl:grid-cols-[320px_1fr] gap-6">
 
-      <div className="px-8 py-6 border-b-[4px] border-[#1d2b53] bg-[#fff7d6] shrink-0">
+        {/* SIDEBAR */}
 
-        <div className="flex items-center justify-between">
+        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] shadow-[6px_6px_0px_#1d2b53] overflow-hidden flex flex-col">
 
-          <div>
+          {/* HEADER */}
 
-            <h1 className="text-5xl font-black text-[#1d2b53]">
+          <div className="bg-[#fff7d6] border-b-[4px] border-[#1d2b53] p-6">
 
-              Team Chat
+            <div className="flex items-center gap-4">
 
-            </h1>
+              <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
 
-            <p className="text-[#5c6b8a] mt-2 text-lg capitalize">
+                <MessageCircle
+                  size={30}
+                  className="text-[#1d2b53]"
+                />
 
-              {
+              </div>
 
-                currentUser?.role ===
-                "pm"
+              <div>
 
-                ? `Viewing ${selectedTeam} Team`
+                <h1 className="text-3xl font-black text-[#1d2b53]">
 
-                : `${selectedTeam} Team Workspace`
+                  Team Chat
 
-              }
+                </h1>
 
-            </p>
+                <p className="text-[#5c6b8a] mt-1">
 
+                  Realtime collaboration
+
+                </p>
+
+              </div>
+
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* SEARCH */}
 
-            {
+          <div className="p-5 border-b-[4px] border-[#1d2b53]">
 
-              totalUnread > 0 && (
+            <div className="flex items-center gap-3 bg-[#f7f3ea] border-[3px] border-[#1d2b53] rounded-[20px] px-4 py-4">
 
-                <div className="bg-[#ff5f7e] border-[3px] border-[#1d2b53] shadow-[3px_3px_0px_#1d2b53] text-white px-5 py-2 rounded-full text-sm font-bold">
+              <Search
+                size={20}
+                className="text-[#5c6b8a]"
+              />
 
-                  {
-                    totalUnread
-                  } unread
+              <input
 
-                </div>
+                type="text"
 
-              )
+                placeholder="Search messages..."
 
-            }
+                value={search}
 
-            <div className="bg-[#dcecff] border-[3px] border-[#1d2b53] shadow-[3px_3px_0px_#1d2b53] text-[#1d2b53] px-5 py-2 rounded-full text-sm font-bold capitalize">
+                onChange={(e) =>
+                  setSearch(
+                    e.target.value
+                  )
+                }
 
-              {
-                currentUser?.role
-              }
+                className="bg-transparent outline-none flex-1 font-semibold text-[#1d2b53]"
+
+              />
 
             </div>
 
           </div>
 
-        </div>
+          {/* TEAMS */}
 
-      </div>
-
-      {/* TEAM TABS */}
-
-      {
-
-        currentUser?.role ===
-        "pm" && (
-
-          <div className="px-8 py-5 flex gap-4 overflow-x-auto bg-[#f7f3ea] border-b-[4px] border-[#1d2b53] shrink-0">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
             {
 
@@ -587,65 +507,102 @@ function TeamChat() {
 
                     key={team}
 
-                    onClick={() => {
-
+                    onClick={() =>
                       setSelectedTeam(
                         team
-                      );
-
-                      fetchMessages(
-                        team
-                      );
-
-                    }}
+                      )
+                    }
 
                     className={`
 
-                      px-6 py-4 rounded-[22px]
-                      whitespace-nowrap
+                      w-full flex items-center gap-4
+                      rounded-[24px]
+                      border-[3px]
+                      px-5 py-5
+                      text-left
                       transition-all
-                      flex items-center gap-3
-                      border-[3px] border-[#1d2b53]
-                      font-bold capitalize
 
                       ${
                         selectedTeam ===
                         team
 
-                        ? "bg-[#3b82f6] text-white shadow-[4px_4px_0px_#1d2b53]"
+                        ? "bg-[#3b82f6] text-white border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53]"
 
-                        : "bg-white text-[#1d2b53]"
+                        : "bg-white text-[#1d2b53] border-[#1d2b53]"
                       }
 
                     `}
 
                   >
 
-                    <span>
+                    <div className={`
 
-                      {team}
+                      w-14 h-14 rounded-2xl
+                      border-[3px]
+                      flex items-center justify-center
 
-                    </span>
-
-                    {
-
-                      teamUnread[
+                      ${
+                        selectedTeam ===
                         team
-                      ] > 0 && (
 
-                        <div className="min-w-[24px] h-[24px] px-2 rounded-full bg-[#ff5f7e] border-[2px] border-[#1d2b53] text-white text-xs flex items-center justify-center">
+                        ? "bg-white border-white"
 
-                          {
-                            teamUnread[
-                              team
-                            ]
-                          }
+                        : "bg-[#dcecff] border-[#1d2b53]"
+                      }
 
-                        </div>
+                    `}>
 
-                      )
+                      <Users
+                        size={24}
+                        className={
 
-                    }
+                          selectedTeam ===
+                          team
+
+                          ? "text-[#1d2b53]"
+
+                          : "text-[#1d2b53]"
+                        }
+                      />
+
+                    </div>
+
+                    <div>
+
+                      <h2 className="font-black text-lg capitalize">
+
+                        {team}
+
+                      </h2>
+
+                      <p className={`
+
+                        text-sm mt-1
+
+                        ${
+                          selectedTeam ===
+                          team
+
+                          ? "text-white"
+
+                          : "text-[#5c6b8a]"
+                        }
+
+                      `}>
+
+                        {
+
+                          team === "all"
+
+                          ? "Global chat"
+
+                          : "Team room"
+
+                        }
+
+                      </p>
+
+                    </div>
 
                   </button>
 
@@ -656,253 +613,265 @@ function TeamChat() {
 
           </div>
 
-        )
+        </div>
 
-      }
+        {/* CHAT AREA */}
 
-      {/* MESSAGES */}
+        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] shadow-[6px_6px_0px_#1d2b53] overflow-hidden flex flex-col h-full">
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-8 py-8">
+          {/* TOP */}
 
-        <div className="space-y-8">
+          <div className="bg-[#dcecff] border-b-[4px] border-[#1d2b53] px-7 py-6 flex items-center justify-between">
 
-          {
+            <div>
 
-            messages.map(
+              <h2 className="text-4xl font-black text-[#1d2b53] capitalize">
 
-              (msg) => {
+                {selectedTeam}
 
-                const isMine =
+              </h2>
 
-                  msg.sender_email ===
-                  currentUser?.email;
+              <p className="text-[#5c6b8a] mt-2">
 
-                return (
+                {
+
+                  filteredMessages.length
+
+                } messages
+
+              </p>
+
+            </div>
+
+            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-5 py-3 font-black text-[#1d2b53]">
+
+              LIVE CHAT
+
+            </div>
+
+          </div>
+
+          {/* MESSAGES */}
+
+          <div className="flex-1 overflow-y-auto p-7 space-y-7 bg-[#f7f3ea]">
+
+            {
+
+              filteredMessages.length === 0 && (
+
+                <div className="h-full flex flex-col items-center justify-center">
+
+                  <MessageCircle
+                    size={60}
+                    className="text-[#5c6b8a]"
+                  />
+
+                  <h2 className="text-4xl font-black text-[#1d2b53] mt-6">
+
+                    No Messages Yet
+
+                  </h2>
+
+                </div>
+
+              )
+
+            }
+
+            {
+
+              filteredMessages.map(
+                (msg) => (
 
                   <div
-
                     key={msg.id}
-
-                    className={`
-
-                      flex
-
-                      ${
-                        isMine
-
-                        ? "justify-end"
-
-                        : "justify-start"
-                      }
-
-                    `}
-
+                    className="group relative"
                   >
 
-                    <div className="max-w-[70%]">
+                    <ChatBubble
 
-                      {/* USER */}
+                      message={msg}
 
-                      <div className={`
+                      currentUser={
+                        currentUser
+                      }
 
-                        flex items-center gap-3 mb-3
+                    />
 
-                        ${
-                          isMine
+                    {/* DELETE */}
 
-                          ? "justify-end"
+                    {
 
-                          : "justify-start"
-                        }
+                      msg.sender_email ===
+                        currentUser.email && (
 
-                      `}>
+                        <button
 
-                        {
+                          onClick={() =>
+                            deleteMessage(
+                              msg.id
+                            )
+                          }
 
-                          !isMine && (
+                          className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-all w-12 h-12 rounded-2xl bg-red-100 border-[3px] border-red-500 flex items-center justify-center"
 
-                            <div className="w-12 h-12 rounded-2xl border-[3px] border-[#1d2b53] bg-[#ffe0f0] text-[#1d2b53] flex items-center justify-center font-black text-lg">
+                        >
 
-                              {
+                          <Trash2
+                            size={18}
+                            className="text-red-600"
+                          />
 
-                                msg.sender_name?.[0]
+                        </button>
 
-                              }
+                      )
 
-                            </div>
-
-                          )
-
-                        }
-
-                        <div className={
-
-                          isMine
-                          ? "text-right"
-                          : ""
-
-                        }>
-
-                          <h3 className="font-black text-[#1d2b53] text-lg">
-
-                            {
-                              msg.sender_name
-                            }
-
-                          </h3>
-
-                          <div className={`
-
-                            flex gap-3 text-sm text-[#5c6b8a]
-
-                            ${
-                              isMine
-
-                              ? "justify-end"
-
-                              : ""
-                            }
-
-                          `}>
-
-                            <span className="capitalize">
-
-                              {
-                                msg.sender_role
-                              }
-
-                            </span>
-
-                            <span>
-
-                              •
-
-                            </span>
-
-                            <span className="capitalize">
-
-                              {
-                                msg.team_name
-                              }
-
-                            </span>
-
-                          </div>
-
-                        </div>
-
-                        {
-
-                          isMine && (
-
-                            <div className="w-12 h-12 rounded-2xl border-[3px] border-[#1d2b53] bg-[#3b82f6] text-white flex items-center justify-center font-black text-lg">
-
-                              {
-
-                                msg.sender_name?.[0]
-
-                              }
-
-                            </div>
-
-                          )
-
-                        }
-
-                      </div>
-
-                      {/* MESSAGE */}
-
-                      <div className={`
-
-                        rounded-[28px]
-                        px-7 py-6
-                        border-[4px] border-[#1d2b53]
-                        leading-8
-                        text-[16px]
-                        break-words
-
-                        ${
-                          isMine
-
-                          ? "bg-[#3b82f6] text-white shadow-[5px_5px_0px_#1d2b53]"
-
-                          : "bg-white text-[#1d2b53] shadow-[5px_5px_0px_#1d2b53]"
-                        }
-
-                      `}>
-
-                        {msg.message}
-
-                      </div>
-
-                    </div>
+                    }
 
                   </div>
 
-                );
-
-              }
-
-            )
-
-          }
-
-          <div ref={bottomRef}></div>
-
-        </div>
-
-      </div>
-
-      {/* INPUT */}
-
-      <div className="bg-[#fff7d6] border-t-[4px] border-[#1d2b53] px-8 py-6 shrink-0">
-
-        <div className="flex items-center gap-4">
-
-          <input
-
-            type="text"
-
-            value={message}
-
-            onChange={(e) =>
-              setMessage(
-                e.target.value
+                )
               )
+
             }
 
-            placeholder="Send message to team..."
-
-            className="flex-1 bg-white border-[4px] border-[#1d2b53] rounded-[26px] px-7 py-5 outline-none text-[#1d2b53] placeholder:text-[#8a94a6]"
-
-            onKeyDown={(e) => {
-
-              if (
-                e.key === "Enter"
-              ) {
-
-                handleSend();
-
+            <div
+              ref={
+                messagesEndRef
               }
+            />
 
-            }}
+          </div>
 
-          />
+          {/* INPUT */}
 
-          <button
+          <div className="border-t-[4px] border-[#1d2b53] bg-white p-6">
 
-            onClick={
-              handleSend
-            }
+            <div className="flex items-end gap-4">
 
-            className="bg-[#22c55e] text-white px-10 py-5 rounded-[26px] border-[4px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-black hover:translate-y-[2px] transition-all"
+              {/* FILE */}
 
-          >
+              <button
 
-            Send
+                onClick={() =>
 
-          </button>
+                  fileInputRef.current.click()
+
+                }
+
+                className="w-16 h-16 rounded-[22px] bg-[#fff5b8] border-[4px] border-[#1d2b53] flex items-center justify-center shadow-[4px_4px_0px_#1d2b53]"
+
+              >
+
+                <Paperclip
+                  size={24}
+                  className="text-[#1d2b53]"
+                />
+
+              </button>
+
+              {/* IMAGE */}
+
+              <button
+
+                onClick={() =>
+
+                  fileInputRef.current.click()
+
+                }
+
+                className="w-16 h-16 rounded-[22px] bg-[#ffe0f0] border-[4px] border-[#1d2b53] flex items-center justify-center shadow-[4px_4px_0px_#1d2b53]"
+
+              >
+
+                <Image
+                  size={24}
+                  className="text-[#1d2b53]"
+                />
+
+              </button>
+
+              {/* INPUT */}
+
+              <div className="flex-1 bg-[#f7f3ea] border-[4px] border-[#1d2b53] rounded-[28px] px-6 py-5 shadow-[4px_4px_0px_#1d2b53]">
+
+                <textarea
+
+                  rows={2}
+
+                  placeholder="Type message..."
+
+                  value={message}
+
+                  onChange={(e) =>
+                    setMessage(
+                      e.target.value
+                    )
+                  }
+
+                  onKeyDown={(e) => {
+
+                    if (
+
+                      e.key ===
+                        "Enter" &&
+
+                      !e.shiftKey
+
+                    ) {
+
+                      e.preventDefault();
+
+                      sendMessage();
+
+                    }
+
+                  }}
+
+                  className="w-full bg-transparent resize-none outline-none text-[#1d2b53] font-medium"
+
+                />
+
+              </div>
+
+              {/* SEND */}
+
+              <button
+
+                onClick={
+                  sendMessage
+                }
+
+                className="w-20 h-20 rounded-[26px] bg-[#3b82f6] border-[4px] border-[#1d2b53] flex items-center justify-center shadow-[5px_5px_0px_#1d2b53] hover:translate-y-[2px] transition-all"
+
+              >
+
+                <Send
+                  size={30}
+                  className="text-white"
+                />
+
+              </button>
+
+              {/* HIDDEN FILE */}
+
+              <input
+
+                type="file"
+
+                ref={fileInputRef}
+
+                onChange={
+                  uploadFile
+                }
+
+                className="hidden"
+
+              />
+
+            </div>
+
+          </div>
 
         </div>
 
