@@ -1,120 +1,223 @@
+import {
+  Check,
+  Clock3,
+  Eye,
+  Trash2,
+  User2
+} from "lucide-react";
+
 function TaskCard({
 
   task,
+  currentUser,
   updateStatus,
+  deleteTask,
+  openReviewModal,
   setSelectedTask
 
 }) {
 
+  // ROLE
+
+  const role =
+    currentUser?.role;
+
+  // COLORS
+
+  const priorityColors = {
+
+    low: "bg-[#d8f7df]",
+    medium: "bg-[#fff5b8]",
+    high: "bg-[#ffe0f0]"
+
+  };
+
+  const statusColors = {
+
+    todo: "bg-[#dcecff]",
+
+    "in progress":
+      "bg-[#fff5b8]",
+
+    "under review":
+      "bg-[#ffe0f0]",
+
+    done:
+      "bg-[#d8f7df]"
+
+  };
+
+  // MEMBER WORKFLOW
+
+  const canMoveToProgress =
+
+    role === "member" &&
+    task.status === "todo";
+
+  const canMoveToReview =
+
+    role === "member" &&
+    task.status ===
+      "in progress";
+
+  // LEAD REVIEW
+
+  const canReview =
+
+    role === "lead" &&
+    task.status ===
+      "under review";
+
+  // DELETE
+
+  const canDelete =
+
+    role === "lead";
+
   return (
 
-    <div className="bg-white rounded-3xl p-5 shadow-sm">
+    <div className={`
 
-      {/* TITLE */}
+      rounded-[28px]
+      border-[4px]
+      p-6
+      shadow-[5px_5px_0px_#1d2b53]
+      transition-all
 
-      <div className="mb-4">
+      ${
+        task.is_deleted
 
-        <h2 className="text-xl font-bold">
+        ? "bg-[#ffe0f0] border-red-500 opacity-70"
 
-          {task.title}
+        : "bg-white border-[#1d2b53]"
+      }
 
-        </h2>
+    `}>
 
-        <p className="text-sm text-gray-500 mt-2 leading-6">
+      {/* TOP */}
 
-          {
-            task.description
+      <div className="flex items-start justify-between gap-4 mb-5">
+
+        <div>
+
+          <h2 className="text-2xl font-black text-[#1d2b53] leading-tight">
+
+            {task.title}
+
+          </h2>
+
+          <p className="text-[#5c6b8a] mt-2 leading-7">
+
+            {
+              task.description
+            }
+
+          </p>
+
+        </div>
+
+        {/* PRIORITY */}
+
+        <div className={`
+
+          px-4 py-2 rounded-full
+          border-[2px] border-[#1d2b53]
+          text-sm font-bold capitalize
+          whitespace-nowrap
+
+          ${
+            priorityColors[
+              task.priority
+            ]
           }
 
-        </p>
+        `}>
+
+          {
+            task.priority
+          }
+
+        </div>
 
       </div>
 
-      {/* INFO */}
+      {/* USER */}
 
-      <div className="space-y-2 text-sm mb-5">
+      <div className="flex items-center justify-between mb-6">
 
-        <div className="flex justify-between">
+        <div className="flex items-center gap-3">
 
-          <span className="text-gray-400">
+          <div className="w-12 h-12 rounded-2xl bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center">
 
-            Assigned
+            <User2
+              size={22}
+              className="text-[#1d2b53]"
+            />
 
-          </span>
+          </div>
 
-          <span>
+          <div>
 
-            {
-              task.assigned_to
-            }
+            <p className="text-sm text-[#5c6b8a]">
 
-          </span>
+              Assigned To
 
-        </div>
+            </p>
 
-        <div className="flex justify-between">
+            <h3 className="font-black text-[#1d2b53]">
 
-          <span className="text-gray-400">
+              {
 
-            Team
+                task.assigned_to ||
 
-          </span>
+                "Anyone"
 
-          <span className="capitalize">
+              }
 
-            {
-              task.team_name
-            }
+            </h3>
 
-          </span>
-
-        </div>
-
-        <div className="flex justify-between">
-
-          <span className="text-gray-400">
-
-            Priority
-
-          </span>
-
-          <span className={`
-
-            px-3 py-1 rounded-full text-xs capitalize
-
-            ${
-              task.priority ===
-              "high"
-
-              ? "bg-red-100 text-red-600"
-
-              : task.priority ===
-                "medium"
-
-              ? "bg-yellow-100 text-yellow-700"
-
-              : "bg-green-100 text-green-700"
-            }
-
-          `}>
-
-            {
-              task.priority
-            }
-
-          </span>
+          </div>
 
         </div>
 
-        <div className="flex justify-between">
+        {/* STATUS */}
 
-          <span className="text-gray-400">
+        <div className={`
 
-            Due
+          px-4 py-2 rounded-full
+          border-[2px] border-[#1d2b53]
+          text-sm font-bold capitalize
 
-          </span>
+          ${
+            statusColors[
+              task.status
+            ]
+          }
 
-          <span>
+        `}>
+
+          {
+            task.status
+          }
+
+        </div>
+
+      </div>
+
+      {/* DEADLINE */}
+
+      <div className="flex items-center gap-3 mb-7">
+
+        <Clock3
+          size={20}
+          className="text-[#5c6b8a]"
+        />
+
+        <p className="text-[#5c6b8a] font-semibold">
+
+          Due:
+
+          <span className="text-[#1d2b53] ml-2 font-black">
 
             {
               task.due_date
@@ -122,84 +225,184 @@ function TaskCard({
 
           </span>
 
-        </div>
+        </p>
 
       </div>
 
-      {/* STATUS */}
+      {/* DELETED */}
 
-      <div className="flex gap-2 flex-wrap">
+      {
+
+        task.is_deleted && (
+
+          <div className="mb-6 bg-red-100 border-[3px] border-red-500 rounded-2xl p-4">
+
+            <p className="font-bold text-red-600">
+
+              Deleted by:
+              {" "}
+              {
+                task.deleted_by
+              }
+
+            </p>
+
+            <p className="text-sm text-red-500 mt-1">
+
+              {
+                task.deleted_at
+              }
+
+            </p>
+
+          </div>
+
+        )
+
+      }
+
+      {/* ACTIONS */}
+
+      <div className="flex flex-wrap gap-3">
+
+        {/* VIEW */}
 
         <button
 
           onClick={() =>
-            updateStatus(
-              task.id,
-              "pending"
+            setSelectedTask(
+              task
             )
           }
 
-          className="px-3 py-2 bg-gray-100 rounded-xl text-sm"
+          className="flex items-center gap-2 bg-[#dcecff] text-[#1d2b53] px-5 py-3 rounded-2xl border-[3px] border-[#1d2b53] font-bold shadow-[3px_3px_0px_#1d2b53] hover:translate-y-[2px] transition-all"
 
         >
 
-          Pending
+          <Eye size={18} />
+
+          Details
 
         </button>
 
-        <button
+        {/* MEMBER */}
 
-          onClick={() =>
-            updateStatus(
-              task.id,
-              "in progress"
-            )
-          }
+        {
 
-          className="px-3 py-2 bg-yellow-100 rounded-xl text-sm"
+          canMoveToProgress && (
 
-        >
+            <button
 
-          Progress
+              onClick={() =>
 
-        </button>
+                updateStatus(
 
-        <button
+                  task.id,
+                  "in progress"
 
-          onClick={() =>
-            updateStatus(
-              task.id,
-              "completed"
-            )
-          }
+                )
 
-          className="px-3 py-2 bg-green-100 rounded-xl text-sm"
+              }
 
-        >
+              className="bg-[#fff5b8] text-[#1d2b53] px-5 py-3 rounded-2xl border-[3px] border-[#1d2b53] font-bold shadow-[3px_3px_0px_#1d2b53] hover:translate-y-[2px] transition-all"
 
-          Done
+            >
 
-        </button>
+              Start Task
 
-      </div>
+            </button>
 
-      {/* DETAILS */}
-
-      <button
-
-        onClick={() =>
-          setSelectedTask(
-            task
           )
+
         }
 
-        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 transition-all text-white py-3 rounded-2xl"
+        {
 
-      >
+          canMoveToReview && (
 
-        View Details
+            <button
 
-      </button>
+              onClick={() =>
+
+                updateStatus(
+
+                  task.id,
+                  "under review"
+
+                )
+
+              }
+
+              className="bg-[#ffe0f0] text-[#1d2b53] px-5 py-3 rounded-2xl border-[3px] border-[#1d2b53] font-bold shadow-[3px_3px_0px_#1d2b53] hover:translate-y-[2px] transition-all"
+
+            >
+
+              Submit Review
+
+            </button>
+
+          )
+
+        }
+
+        {/* LEAD */}
+
+        {
+
+          canReview && (
+
+            <button
+
+              onClick={() =>
+                openReviewModal(
+                  task
+                )
+              }
+
+              className="flex items-center gap-2 bg-[#d8f7df] text-[#1d2b53] px-5 py-3 rounded-2xl border-[3px] border-[#1d2b53] font-bold shadow-[3px_3px_0px_#1d2b53] hover:translate-y-[2px] transition-all"
+
+            >
+
+              <Check size={18} />
+
+              Review
+
+            </button>
+
+          )
+
+        }
+
+        {/* DELETE */}
+
+        {
+
+          canDelete &&
+          !task.is_deleted && (
+
+            <button
+
+              onClick={() =>
+                deleteTask(
+                  task.id
+                )
+              }
+
+              className="flex items-center gap-2 bg-red-200 text-red-700 px-5 py-3 rounded-2xl border-[3px] border-red-500 font-bold shadow-[3px_3px_0px_#ef4444] hover:translate-y-[2px] transition-all"
+
+            >
+
+              <Trash2 size={18} />
+
+              Delete
+
+            </button>
+
+          )
+
+        }
+
+      </div>
 
     </div>
 
