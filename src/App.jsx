@@ -13,7 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Tasks from "./pages/Tasks";
 import DailyUpdates from "./pages/DailyUpdates";
-import LinkedinUpdates from "./pages/LinkedinUpdates";
+import LinkedInUpdates from "./pages/LinkedInUpdates";
 import TeamChat from "./pages/TeamChat";
 
 // AUTH PAGES
@@ -138,14 +138,14 @@ function App() {
 
           />
 
-          {/* LINKEDIN */}
+          {/* LinkedIn */}
 
           <Route
 
-            path="linkedin-updates"
+            path="LinkedIn-updates"
 
             element={
-              <LinkedinUpdates />
+              <LinkedInUpdates />
             }
 
           />

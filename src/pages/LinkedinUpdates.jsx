@@ -22,7 +22,7 @@ from "../services/supabase";
 import * as XLSX
 from "xlsx";
 
-function LinkedinUpdates() {
+function LinkedInUpdates() {
 
   const [updates,
     setUpdates] =
@@ -59,8 +59,8 @@ function LinkedinUpdates() {
 
   // FORM
 
-  const [linkedinUrl,
-    setLinkedinUrl] =
+  const [LinkedInUrl,
+    setLinkedInUrl] =
       useState("");
 
   const [demoLink,
@@ -89,7 +89,7 @@ function LinkedinUpdates() {
       supabase
 
         .channel(
-          "linkedin-live"
+          "LinkedIn-live"
         )
 
         .on(
@@ -103,7 +103,7 @@ function LinkedinUpdates() {
             schema: "public",
 
             table:
-              "linkedin_updates"
+              "LinkedIn_updates"
 
           },
 
@@ -139,7 +139,7 @@ function LinkedinUpdates() {
       } = await supabase
 
         .from(
-          "linkedin_updates"
+          "LinkedIn_updates"
         )
 
         .select("*")
@@ -178,13 +178,13 @@ function LinkedinUpdates() {
   const submitUpdate =
     async () => {
 
-      if (!linkedinUrl)
+      if (!LinkedInUrl)
         return;
 
       await supabase
 
         .from(
-          "linkedin_updates"
+          "LinkedIn_updates"
         )
 
         .insert([{
@@ -204,8 +204,8 @@ function LinkedinUpdates() {
           week_number:
             selectedWeek,
 
-          linkedin_url:
-            linkedinUrl,
+          LinkedIn_url:
+            LinkedInUrl,
 
           demo_link:
             demoLink,
@@ -231,7 +231,7 @@ function LinkedinUpdates() {
   const resetForm =
     () => {
 
-      setLinkedinUrl("");
+      setLinkedInUrl("");
 
       setDemoLink("");
 
@@ -320,8 +320,8 @@ function LinkedinUpdates() {
             Week:
               update.week_number,
 
-            Linkedin:
-              update.linkedin_url,
+            LinkedIn:
+              update.LinkedIn_url,
 
             Demo:
               update.demo_link,
@@ -352,7 +352,7 @@ function LinkedinUpdates() {
 
         worksheet,
 
-        "Linkedin Updates"
+        "LinkedIn Updates"
 
       );
 
@@ -360,7 +360,7 @@ function LinkedinUpdates() {
 
         workbook,
 
-        `linkedin-week-${selectedWeek}.xlsx`
+        `LinkedIn-week-${selectedWeek}.xlsx`
 
       );
 
@@ -376,7 +376,7 @@ function LinkedinUpdates() {
 
         <h1 className="text-5xl font-black text-[#1d2b53]">
 
-          Loading Linkedin Updates...
+          Loading LinkedIn Updates...
 
         </h1>
 
@@ -398,7 +398,7 @@ function LinkedinUpdates() {
 
           <h1 className="text-6xl font-black text-[#1d2b53]">
 
-            Linkedin Updates
+            LinkedIn Updates
 
           </h1>
 
@@ -540,4 +540,4 @@ function LinkedinUpdates() {
 
 }
 
-export default LinkedinUpdates;
+export default LinkedInUpdates;

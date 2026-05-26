@@ -479,11 +479,11 @@ function MainLayout() {
                   <button
                     onClick={() =>
                       navigate(
-                        "/linkedin-update"
+                        "/LinkedIn-update"
                       )
                     }
                     className={navClass(
-                      "/linkedin-update"
+                      "/LinkedIn-update"
                     )}
                   >
 

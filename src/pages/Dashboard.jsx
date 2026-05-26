@@ -46,8 +46,8 @@ function Dashboard() {
     setUpdates] =
       useState([]);
 
-  const [linkedinUpdates,
-    setLinkedinUpdates] =
+  const [LinkedInUpdates,
+    setLinkedInUpdates] =
       useState([]);
 
   const [activities,
@@ -156,12 +156,12 @@ function Dashboard() {
 
       const {
 
-        data: linkedinData
+        data: LinkedInData
 
       } = await supabase
 
         .from(
-          "linkedin_updates"
+          "LinkedIn_updates"
         )
 
         .select("*");
@@ -218,8 +218,8 @@ function Dashboard() {
         updateData || []
       );
 
-      setLinkedinUpdates(
-        linkedinData || []
+      setLinkedInUpdates(
+        LinkedInData || []
       );
 
       setActivities(
@@ -302,16 +302,16 @@ function Dashboard() {
       }
     );
 
-  // LINKEDIN %
+  // LinkedIn %
 
-  const linkedinPercentage =
+  const LinkedInPercentage =
 
     users.length > 0
 
       ? Math.round(
 
           (
-            linkedinUpdates.length /
+            LinkedInUpdates.length /
             users.length
           ) * 100
 
@@ -680,7 +680,7 @@ function Dashboard() {
 
         </div>
 
-        {/* LINKEDIN */}
+        {/* LinkedIn */}
 
         <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
 
@@ -716,7 +716,7 @@ function Dashboard() {
           <h1 className="text-7xl font-black text-[#1d2b53]">
 
             {
-              linkedinPercentage
+              LinkedInPercentage
             }%
 
           </h1>

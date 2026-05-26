@@ -77,7 +77,7 @@ function ActivityFeed({
 
           );
 
-        case "linkedin_update":
+        case "LinkedIn_update":
 
           return (
 
@@ -123,7 +123,7 @@ function ActivityFeed({
         case "new_message":
           return "bg-[#fff7d6]";
 
-        case "linkedin_update":
+        case "LinkedIn_update":
           return "bg-[#dcecff]";
 
         default:
