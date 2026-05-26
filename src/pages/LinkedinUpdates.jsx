@@ -55,11 +55,18 @@ function LinkedinUpdates() {
       localStorage.getItem(
         "user"
       )
-    );
+    ) || {
+
+      name: "Guest",
+      email: "guest@test.com",
+      role: "member",
+      team_name: "core"
+
+    };
 
   // FORM
 
-  const [LinkedinUrl,
+  const [linkedinUrl,
     setLinkedinUrl] =
       useState("");
 
@@ -85,46 +92,6 @@ function LinkedinUpdates() {
 
     fetchData();
 
-    const channel =
-      supabase
-
-        .channel(
-          "Linkedin-live"
-        )
-
-        .on(
-
-          "postgres_changes",
-
-          {
-
-            event: "*",
-
-            schema: "public",
-
-            table:
-              "Linkedin_updates"
-
-          },
-
-          () => {
-
-            fetchData();
-
-          }
-
-        )
-
-        .subscribe();
-
-    return () => {
-
-      supabase.removeChannel(
-        channel
-      );
-
-    };
-
   }, []);
 
   const fetchData =
@@ -134,12 +101,13 @@ function LinkedinUpdates() {
 
       const {
 
-        data: updateData
+        data: updateData,
+        error: updateError
 
       } = await supabase
 
         .from(
-          "Linkedin_updates"
+          "linkedin_updates"
         )
 
         .select("*")
@@ -161,6 +129,14 @@ function LinkedinUpdates() {
 
         .select("*");
 
+      if (updateError) {
+
+        console.log(
+          updateError
+        );
+
+      }
+
       setUpdates(
         updateData || []
       );
@@ -178,13 +154,13 @@ function LinkedinUpdates() {
   const submitUpdate =
     async () => {
 
-      if (!LinkedinUrl)
+      if (!linkedinUrl)
         return;
 
       await supabase
 
         .from(
-          "Linkedin_updates"
+          "linkedin_updates"
         )
 
         .insert([{
@@ -204,8 +180,8 @@ function LinkedinUpdates() {
           week_number:
             selectedWeek,
 
-          Linkedin_url:
-            LinkedinUrl,
+          linkedin_url:
+            linkedinUrl,
 
           demo_link:
             demoLink,
@@ -282,23 +258,6 @@ function LinkedinUpdates() {
       }
     );
 
-  // MISSING
-
-  const submittedEmails =
-    filteredUpdates.map(
-      (update) =>
-        update.user_email
-    );
-
-  const missingUsers =
-    users.filter(
-      (user) =>
-
-        !submittedEmails.includes(
-          user.email
-        )
-    );
-
   // EXPORT
 
   const exportExcel =
@@ -321,19 +280,13 @@ function LinkedinUpdates() {
               update.week_number,
 
             Linkedin:
-              update.Linkedin_url,
+              update.linkedin_url,
 
             Demo:
               update.demo_link,
 
             Challenges:
-              update.challenges,
-
-            Foundation:
-              update.tagged_foundation,
-
-            ASIET:
-              update.tagged_asiet
+              update.challenges
 
           })
         );
@@ -360,7 +313,7 @@ function LinkedinUpdates() {
 
         workbook,
 
-        `Linkedin-week-${selectedWeek}.xlsx`
+        `linkedin-week-${selectedWeek}.xlsx`
 
       );
 
@@ -376,7 +329,7 @@ function LinkedinUpdates() {
 
         <h1 className="text-5xl font-black text-[#1d2b53]">
 
-          Loading Linkedin Updates...
+          Loading...
 
         </h1>
 
@@ -404,7 +357,7 @@ function LinkedinUpdates() {
 
           <p className="text-[#5c6b8a] mt-3 text-xl">
 
-            Weekly public accountability tracking
+            Weekly accountability tracking
 
           </p>
 
@@ -416,11 +369,10 @@ function LinkedinUpdates() {
 
           {/* WEEK */}
 
-          <div className="flex items-center gap-3 bg-white border-[4px] border-[#1d2b53] rounded-[24px] px-5 py-4 shadow-[4px_4px_0px_#1d2b53]">
+          <div className="flex items-center gap-3 bg-white border-[4px] border-[#1d2b53] rounded-[24px] px-5 py-4">
 
             <CalendarDays
               size={22}
-              className="text-[#5c6b8a]"
             />
 
             <select
@@ -437,7 +389,7 @@ function LinkedinUpdates() {
                 )
               }
 
-              className="bg-transparent outline-none font-semibold text-[#1d2b53]"
+              className="bg-transparent outline-none"
 
             >
 
@@ -463,11 +415,10 @@ function LinkedinUpdates() {
 
           {/* SEARCH */}
 
-          <div className="flex items-center gap-3 bg-white border-[4px] border-[#1d2b53] rounded-[24px] px-5 py-4 shadow-[4px_4px_0px_#1d2b53]">
+          <div className="flex items-center gap-3 bg-white border-[4px] border-[#1d2b53] rounded-[24px] px-5 py-4">
 
             <Search
               size={22}
-              className="text-[#5c6b8a]"
             />
 
             <input
@@ -484,7 +435,7 @@ function LinkedinUpdates() {
                 )
               }
 
-              className="bg-transparent outline-none text-[#1d2b53] font-semibold"
+              className="bg-transparent outline-none"
 
             />
 
@@ -498,11 +449,13 @@ function LinkedinUpdates() {
               exportExcel
             }
 
-            className="flex items-center gap-3 bg-[#d8f7df] text-[#1d2b53] px-6 py-4 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-black hover:translate-y-[2px] transition-all"
+            className="flex items-center gap-3 bg-[#d8f7df] px-6 py-4 rounded-[24px] border-[4px] border-[#1d2b53] font-black"
 
           >
 
-            <Download size={22} />
+            <Download
+              size={22}
+            />
 
             Export
 
@@ -518,11 +471,11 @@ function LinkedinUpdates() {
               )
             }
 
-            className="flex items-center gap-3 bg-[#2563eb] text-white px-6 py-4 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-black hover:translate-y-[2px] transition-all"
+            className="flex items-center gap-3 bg-[#2563eb] text-white px-6 py-4 rounded-[24px] border-[4px] border-[#1d2b53] font-black"
 
           >
 
-            <Linkedin
+            <Briefcase
               size={22}
             />
 
@@ -531,6 +484,86 @@ function LinkedinUpdates() {
           </button>
 
         </div>
+
+      </div>
+
+      {/* LIST */}
+
+      <div className="grid gap-6">
+
+        {
+
+          filteredUpdates.map(
+            (update) => (
+
+              <div
+
+                key={update.id}
+
+                className="bg-white border-[4px] border-[#1d2b53] rounded-[30px] p-7"
+
+              >
+
+                <div className="flex items-center justify-between mb-5">
+
+                  <div>
+
+                    <h2 className="text-3xl font-black text-[#1d2b53]">
+
+                      {
+                        update.user_name
+                      }
+
+                    </h2>
+
+                    <p className="text-[#5c6b8a] mt-2">
+
+                      {
+                        update.team_name
+                      }
+
+                    </p>
+
+                  </div>
+
+                  <div className="bg-[#dcecff] border-[3px] border-[#1d2b53] rounded-full px-5 py-3 font-black">
+
+                    Week {
+                      update.week_number
+                    }
+
+                  </div>
+
+                </div>
+
+                <a
+
+                  href={
+                    update.linkedin_url
+                  }
+
+                  target="_blank"
+
+                  rel="noreferrer"
+
+                  className="flex items-center gap-3 text-blue-600 font-bold"
+
+                >
+
+                  <ExternalLink
+                    size={20}
+                  />
+
+                  Open Linkedin Post
+
+                </a>
+
+              </div>
+
+            )
+          )
+
+        }
 
       </div>
 

@@ -14,7 +14,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   CheckSquare,
-  Linkedin,
+  Briefcase,
   MessageCircle,
   LogOut,
   CalendarDays
@@ -39,6 +39,7 @@ function MainLayout() {
       )
     ) || {
 
+      name: "Guest",
       role: "pm"
 
     };
@@ -100,7 +101,7 @@ function MainLayout() {
 
   }, []);
 
-  // NAV STYLE
+  // ACTIVE NAV STYLE
 
   const navClass =
     (path) => {
@@ -121,7 +122,7 @@ function MainLayout() {
 
           ? "bg-[#3b82f6] text-white border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53]"
 
-          : "bg-white text-[#1d2b53] border-[#1d2b53]"
+          : "bg-white text-[#1d2b53] border-[#1d2b53] hover:bg-[#f3f4f6]"
         }
 
       `;
@@ -282,7 +283,7 @@ function MainLayout() {
 
             >
 
-              <Linkedin
+              <Briefcase
                 size={24}
               />
 
@@ -290,7 +291,7 @@ function MainLayout() {
 
             </button>
 
-            {/* CHAT */}
+            {/* TEAM CHAT */}
 
             <button
 
@@ -322,7 +323,7 @@ function MainLayout() {
 
                   unreadCount > 0 && (
 
-                    <div className="min-w-[28px] h-[28px] rounded-full bg-red-500 text-white text-sm flex items-center justify-center">
+                    <div className="min-w-[28px] h-[28px] rounded-full bg-red-500 text-white text-sm flex items-center justify-center font-bold">
 
                       {
                         unreadCount
@@ -392,7 +393,7 @@ function MainLayout() {
 
       </div>
 
-      {/* CONTENT */}
+      {/* PAGE CONTENT */}
 
       <div className="flex-1 overflow-y-auto">
 

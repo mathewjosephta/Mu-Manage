@@ -11,22 +11,12 @@ import {
   Clock3,
   Activity,
   Briefcase,
-  MessageCircle,
   Users
 
 } from "lucide-react";
 
 import { supabase }
 from "../services/supabase";
-
-import TeamProgress
-from "../components/TeamProgress";
-
-import ActivityFeed
-from "../components/ActivityFeed";
-
-import NotificationBell
-from "../components/NotificationBell";
 
 function Dashboard() {
 
@@ -46,16 +36,8 @@ function Dashboard() {
     setUpdates] =
       useState([]);
 
-  const [LinkedinUpdates,
+  const [linkedinUpdates,
     setLinkedinUpdates] =
-      useState([]);
-
-  const [activities,
-    setActivities] =
-      useState([]);
-
-  const [notifications,
-    setNotifications] =
       useState([]);
 
   const [loading,
@@ -109,128 +91,112 @@ function Dashboard() {
 
   }, []);
 
+  // FETCH DATA
+
   const fetchData =
     async () => {
 
-      setLoading(true);
+      try {
 
-      const {
+        setLoading(true);
 
-        data: projectData
+        // PROJECTS
 
-      } = await supabase
+        const {
 
-        .from("projects")
+          data: projectData
 
-        .select("*");
+        } = await supabase
 
-      const {
+          .from("projects")
 
-        data: taskData
+          .select("*");
 
-      } = await supabase
+        // TASKS
 
-        .from("tasks")
+        const {
 
-        .select("*");
+          data: taskData
 
-      const {
+        } = await supabase
 
-        data: userData
+          .from("tasks")
 
-      } = await supabase
+          .select("*");
 
-        .from("users")
+        // USERS
 
-        .select("*");
+        const {
 
-      const {
+          data: userData
 
-        data: updateData
+        } = await supabase
 
-      } = await supabase
+          .from("users")
 
-        .from("daily_updates")
+          .select("*");
 
-        .select("*");
+        // DAILY UPDATES
 
-      const {
+        const {
 
-        data: LinkedinData
+          data: updateData
 
-      } = await supabase
+        } = await supabase
 
-        .from(
-          "Linkedin_updates"
-        )
+          .from("daily_updates")
 
-        .select("*");
+          .select("*");
 
-      const {
+        // LINKEDIN
 
-        data: activityData
+        const {
 
-      } = await supabase
+          data: linkedinData
 
-        .from("activities")
+        } = await supabase
 
-        .select("*")
+          .from(
+            "linkedin_updates"
+          )
 
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        )
+          .select("*");
 
-        .limit(15);
+        // SET STATE
 
-      const {
-
-        data: notificationData
-
-      } = await supabase
-
-        .from("notifications")
-
-        .select("*")
-
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
+        setProjects(
+          projectData || []
         );
 
-      setProjects(
-        projectData || []
-      );
+        setTasks(
+          taskData || []
+        );
 
-      setTasks(
-        taskData || []
-      );
+        setUsers(
+          userData || []
+        );
 
-      setUsers(
-        userData || []
-      );
+        setUpdates(
+          updateData || []
+        );
 
-      setUpdates(
-        updateData || []
-      );
+        setLinkedinUpdates(
+          linkedinData || []
+        );
 
-      setLinkedinUpdates(
-        LinkedinData || []
-      );
+      }
 
-      setActivities(
-        activityData || []
-      );
+      catch (err) {
 
-      setNotifications(
-        notificationData || []
-      );
+        console.log(err);
 
-      setLoading(false);
+      }
+
+      finally {
+
+        setLoading(false);
+
+      }
 
     };
 
@@ -276,7 +242,7 @@ function Dashboard() {
       }
     );
 
-  // TODAY
+  // TODAY UPDATES
 
   const today =
     new Date()
@@ -302,86 +268,22 @@ function Dashboard() {
       }
     );
 
-  // Linkedin %
+  // LINKEDIN %
 
-  const LinkedinPercentage =
+  const linkedinPercentage =
 
     users.length > 0
 
       ? Math.round(
 
           (
-            LinkedinUpdates.length /
+            linkedinUpdates.length /
             users.length
           ) * 100
 
         )
 
       : 0;
-
-  // NOTIFICATIONS
-
-  const markAsRead =
-    async (id) => {
-
-      await supabase
-
-        .from(
-          "notifications"
-        )
-
-        .update({
-
-          is_read: true
-
-        })
-
-        .eq("id", id);
-
-      fetchData();
-
-    };
-
-  const markAllAsRead =
-    async () => {
-
-      await supabase
-
-        .from(
-          "notifications"
-        )
-
-        .update({
-
-          is_read: true
-
-        })
-
-        .eq(
-          "is_read",
-          false
-        );
-
-      fetchData();
-
-    };
-
-  const deleteNotification =
-    async (id) => {
-
-      await supabase
-
-        .from(
-          "notifications"
-        )
-
-        .delete()
-
-        .eq("id", id);
-
-      fetchData();
-
-    };
 
   // LOADING
 
@@ -409,63 +311,19 @@ function Dashboard() {
 
       {/* HEADER */}
 
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6 mb-8">
+      <div className="mb-10">
 
-        <div>
+        <h1 className="text-6xl font-black text-[#1d2b53]">
 
-          <h1 className="text-6xl font-black text-[#1d2b53]">
+          Project Dashboard
 
-            Project Dashboard
+        </h1>
 
-          </h1>
+        <p className="text-[#5c6b8a] mt-3 text-xl">
 
-          <p className="text-[#5c6b8a] mt-3 text-xl">
+          Sprint analytics & project management
 
-            Realtime sprint analytics & workflow management
-
-          </p>
-
-        </div>
-
-        <div className="flex items-center gap-5">
-
-          {/* LIVE */}
-
-          <div className="bg-[#d8f7df] border-[4px] border-[#1d2b53] rounded-full px-7 py-4 shadow-[5px_5px_0px_#1d2b53] flex items-center gap-4">
-
-            <div className="w-4 h-4 rounded-full bg-[#22c55e] animate-pulse"></div>
-
-            <span className="font-black text-[#1d2b53]">
-
-              LIVE SYSTEM
-
-            </span>
-
-          </div>
-
-          {/* NOTIFICATIONS */}
-
-          <NotificationBell
-
-            notifications={
-              notifications
-            }
-
-            markAsRead={
-              markAsRead
-            }
-
-            markAllAsRead={
-              markAllAsRead
-            }
-
-            deleteNotification={
-              deleteNotification
-            }
-
-          />
-
-        </div>
+        </p>
 
       </div>
 
@@ -488,12 +346,6 @@ function Dashboard() {
 
             </div>
 
-            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
-
-              Projects
-
-            </div>
-
           </div>
 
           <p className="text-[#5c6b8a] font-bold">
@@ -512,26 +364,16 @@ function Dashboard() {
 
         </div>
 
-        {/* DONE */}
+        {/* COMPLETED */}
 
         <div className="bg-[#d8f7df] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
 
-          <div className="flex items-center justify-between mb-6">
+          <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center mb-6">
 
-            <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
-
-              <CheckCircle2
-                size={30}
-                className="text-[#22c55e]"
-              />
-
-            </div>
-
-            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
-
-              Done
-
-            </div>
+            <CheckCircle2
+              size={30}
+              className="text-[#22c55e]"
+            />
 
           </div>
 
@@ -544,9 +386,7 @@ function Dashboard() {
           <h2 className="text-6xl font-black text-[#1d2b53] mt-3">
 
             {
-
               completedTasks.length
-
             }
 
           </h2>
@@ -557,28 +397,18 @@ function Dashboard() {
 
         <div className="bg-[#fff5b8] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
 
-          <div className="flex items-center justify-between mb-6">
+          <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center mb-6">
 
-            <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
-
-              <Clock3
-                size={30}
-                className="text-[#f59e0b]"
-              />
-
-            </div>
-
-            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
-
-              Review
-
-            </div>
+            <Clock3
+              size={30}
+              className="text-[#f59e0b]"
+            />
 
           </div>
 
           <p className="text-[#5c6b8a] font-bold">
 
-            Pending Reviews
+            Under Review
 
           </p>
 
@@ -592,26 +422,16 @@ function Dashboard() {
 
         </div>
 
-        {/* RISKS */}
+        {/* OVERDUE */}
 
         <div className="bg-[#ffe0f0] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
 
-          <div className="flex items-center justify-between mb-6">
+          <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center mb-6">
 
-            <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
-
-              <AlertTriangle
-                size={30}
-                className="text-red-500"
-              />
-
-            </div>
-
-            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
-
-              Risk
-
-            </div>
+            <AlertTriangle
+              size={30}
+              className="text-red-500"
+            />
 
           </div>
 
@@ -635,7 +455,7 @@ function Dashboard() {
 
       {/* SECOND ROW */}
 
-      <div className="grid xl:grid-cols-3 gap-7 mb-8">
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-7">
 
         {/* DAILY */}
 
@@ -662,7 +482,7 @@ function Dashboard() {
 
               <p className="text-[#5c6b8a]">
 
-                Today submissions
+                Submitted today
 
               </p>
 
@@ -680,7 +500,7 @@ function Dashboard() {
 
         </div>
 
-        {/* Linkedin */}
+        {/* LINKEDIN */}
 
         <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
 
@@ -688,7 +508,7 @@ function Dashboard() {
 
             <div className="w-16 h-16 rounded-[24px] bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center">
 
-              <Linkedin
+              <Briefcase
                 size={28}
                 className="text-[#2563eb]"
               />
@@ -699,13 +519,13 @@ function Dashboard() {
 
               <h2 className="text-3xl font-black text-[#1d2b53]">
 
-                Weekly Linkedin
+                Linkedin Progress
 
               </h2>
 
               <p className="text-[#5c6b8a]">
 
-                Submission progress
+                Weekly submissions
 
               </p>
 
@@ -716,7 +536,7 @@ function Dashboard() {
           <h1 className="text-7xl font-black text-[#1d2b53]">
 
             {
-              LinkedinPercentage
+              linkedinPercentage
             }%
 
           </h1>

@@ -9,146 +9,171 @@ from "../services/supabase";
 
 function Login() {
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [email, setEmail] =
-    useState("");
+  const [email,
+    setEmail] =
+      useState("");
 
-  const [password, setPassword] =
-    useState("");
+  const [password,
+    setPassword] =
+      useState("");
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading,
+    setLoading] =
+      useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin =
+    async () => {
 
-    try {
+      try {
 
-      setLoading(true);
+        setLoading(true);
 
-      // LOGIN
+        // LOGIN
 
-      const {
+        const {
 
-        data: loginData,
+          data: loginData,
 
-        error: loginError
+          error: loginError
 
-      } = await supabase.auth
-        .signInWithPassword({
+        } = await supabase.auth
+          .signInWithPassword({
 
-          email,
-          password
+            email,
+            password
 
-        });
+          });
 
-      if (loginError) {
+        if (loginError) {
 
-        console.log(loginError);
+          console.log(
+            loginError
+          );
 
-        alert(loginError.message);
+          alert(
+            loginError.message
+          );
 
-        return;
+          return;
 
-      }
+        }
 
-      console.log("LOGIN SUCCESS");
-      console.log(loginData);
-
-      // FETCH ROLE
-
-      const {
-
-        data: roleData,
-
-        error: roleError
-
-      } = await supabase
-        .from("users")
-        .select("*")
-        .eq("email", email);
-
-      console.log("ROLE DATA");
-      console.log(roleData);
-
-      console.log("ROLE ERROR");
-      console.log(roleError);
-
-      if (
-        !roleData ||
-        roleData.length === 0
-      ) {
-
-        alert(
-          "No role found"
+        console.log(
+          "LOGIN SUCCESS"
         );
 
-        return;
+        console.log(
+          loginData
+        );
+
+        // FETCH USER DATA
+
+        const {
+
+          data: roleData,
+
+          error: roleError
+
+        } = await supabase
+
+          .from("users")
+
+          .select("*")
+
+          .eq("email", email)
+
+          .single();
+
+        console.log(
+          "ROLE DATA"
+        );
+
+        console.log(
+          roleData
+        );
+
+        console.log(
+          "ROLE ERROR"
+        );
+
+        console.log(
+          roleError
+        );
+
+        if (
+          roleError ||
+          !roleData
+        ) {
+
+          alert(
+            "No user role found"
+          );
+
+          return;
+
+        }
+
+        // SAVE FULL USER
+
+        localStorage.setItem(
+
+          "user",
+
+          JSON.stringify({
+
+            id:
+              roleData.id,
+
+            name:
+              roleData.name,
+
+            email:
+              roleData.email,
+
+            role:
+              roleData.role,
+
+            team_name:
+              roleData.team_name
+
+          })
+
+        );
+
+        console.log(
+          "ROLE:"
+        );
+
+        console.log(
+          roleData.role
+        );
+
+        // REDIRECT
+
+        navigate("/");
 
       }
 
-      const role =
-        roleData[0].role;
+      catch (err) {
 
-      console.log("ROLE:");
-      console.log(role);
-
-      // SAVE ROLE
-
-      localStorage.setItem(
-        "userRole",
-        role
-      );
-
-      // REDIRECT
-
-      if (role === "pm") {
-
-        navigate("/dashboard");
-
-      }
-
-      else if (
-        role === "lead"
-      ) {
-
-        navigate("/calendar");
-
-      }
-
-      else if (
-        role === "member"
-      ) {
-
-        navigate("/calendar");
-
-      }
-
-      else {
+        console.log(err);
 
         alert(
-          "Invalid role"
+          "Login failed"
         );
 
       }
 
-    }
+      finally {
 
-    catch (err) {
+        setLoading(false);
 
-      console.log(err);
+      }
 
-      alert("Login failed");
-
-    }
-
-    finally {
-
-      setLoading(false);
-
-    }
-
-  };
+    };
 
   return (
 
@@ -157,45 +182,81 @@ function Login() {
       <div className="bg-white p-10 rounded-3xl shadow-xl w-[400px]">
 
         <h1 className="text-4xl font-bold mb-2">
+
           μManage
+
         </h1>
 
         <p className="text-gray-500 mb-8">
+
           Agile Project Platform
+
         </p>
 
         <div className="space-y-5">
 
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) =>
-              setEmail(e.target.value)
-            }
-            className="w-full border border-gray-200 bg-gray-50 rounded-2xl px-4 py-3"
-          />
+          {/* EMAIL */}
 
           <input
-            type="password"
-            placeholder="Password"
-            value={password}
+
+            type="email"
+
+            placeholder="Email"
+
+            value={email}
+
             onChange={(e) =>
-              setPassword(e.target.value)
+              setEmail(
+                e.target.value
+              )
             }
-            className="w-full border border-gray-200 bg-gray-50 rounded-2xl px-4 py-3"
+
+            className="w-full border border-gray-200 bg-gray-50 rounded-2xl px-4 py-3 outline-none"
+
           />
+
+          {/* PASSWORD */}
+
+          <input
+
+            type="password"
+
+            placeholder="Password"
+
+            value={password}
+
+            onChange={(e) =>
+              setPassword(
+                e.target.value
+              )
+            }
+
+            className="w-full border border-gray-200 bg-gray-50 rounded-2xl px-4 py-3 outline-none"
+
+          />
+
+          {/* BUTTON */}
 
           <button
-            onClick={handleLogin}
+
+            onClick={
+              handleLogin
+            }
+
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-2xl font-semibold"
+
+            className="w-full bg-blue-600 hover:bg-blue-700 transition-all text-white py-3 rounded-2xl font-semibold"
+
           >
 
             {
+
               loading
+
                 ? "Logging in..."
+
                 : "Login"
+
             }
 
           </button>

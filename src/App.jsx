@@ -5,6 +5,11 @@ import {
   Navigate
 } from "react-router-dom";
 
+import {
+  useEffect,
+  useState
+} from "react";
+
 import MainLayout from "./layouts/MainLayout";
 
 // PAGES
@@ -16,7 +21,7 @@ import DailyUpdates from "./pages/DailyUpdates";
 import LinkedinUpdates from "./pages/LinkedinUpdates";
 import TeamChat from "./pages/TeamChat";
 
-// AUTH PAGES
+// AUTH
 
 import Login from "./pages/Login";
 
@@ -26,14 +31,28 @@ import "./App.css";
 
 function App() {
 
-  // USER
+  const [user,
+    setUser] =
+      useState(null);
 
-  const user =
-    JSON.parse(
-      localStorage.getItem(
-        "user"
-      )
+  // LOAD USER
+
+  useEffect(() => {
+
+    const storedUser =
+      JSON.parse(
+
+        localStorage.getItem(
+          "user"
+        )
+
+      );
+
+    setUser(
+      storedUser
     );
+
+  }, []);
 
   // PROTECTED ROUTE
 
@@ -44,10 +63,12 @@ function App() {
     if (!user) {
 
       return (
+
         <Navigate
           to="/login"
           replace
         />
+
       );
 
     }
@@ -126,7 +147,7 @@ function App() {
 
           />
 
-          {/* DAILY UPDATES */}
+          {/* DAILY */}
 
           <Route
 
@@ -138,11 +159,11 @@ function App() {
 
           />
 
-          {/* Linkedin */}
+          {/* LINKEDIN */}
 
           <Route
 
-            path="Linkedin-updates"
+            path="linkedin-updates"
 
             element={
               <LinkedinUpdates />
@@ -150,7 +171,7 @@ function App() {
 
           />
 
-          {/* TEAM CHAT */}
+          {/* CHAT */}
 
           <Route
 
@@ -171,10 +192,12 @@ function App() {
           path="*"
 
           element={
+
             <Navigate
               to="/"
               replace
             />
+
           }
 
         />
