@@ -5,19 +5,29 @@ import {
 
 import {
 
+  Plus,
+  Pencil,
+  Trash2,
+  Users,
+  Calendar,
+  Code2,
   FolderKanban,
-  AlertTriangle,
-  Clock3,
-  CheckCircle2,
-  Activity,
-  ChevronRight
+  Search,
+  X
 
 } from "lucide-react";
 
 import { supabase }
 from "../services/supabase";
 
+import ProjectCard
+from "../components/ProjectCard";
+
 function Projects() {
+
+  const [projects,
+    setProjects] =
+      useState([]);
 
   const [tasks,
     setTasks] =
@@ -27,86 +37,77 @@ function Projects() {
     setUsers] =
       useState([]);
 
+  const [loading,
+    setLoading] =
+      useState(true);
+
+  const [search,
+    setSearch] =
+      useState("");
+
   const [selectedProject,
     setSelectedProject] =
       useState(null);
 
-  // PROJECTS
+  const [showModal,
+    setShowModal] =
+      useState(false);
 
-  const projects = [
+  const [editing,
+    setEditing] =
+      useState(false);
 
-    {
-      name: "Campus Bites",
-      team: "canteen",
-      deadline: "May 30",
-      color: "bg-[#dcecff]"
-    },
+  // FORM
 
-    {
-      name: "Q-Doc",
-      team: "printer",
-      deadline: "June 05",
-      color: "bg-[#ffe0f0]"
-    },
+  const [name,
+    setName] =
+      useState("");
 
-    {
-      name: "Campus Connect",
-      team: "campus connect",
-      deadline: "June 12",
-      color: "bg-[#fff5b8]"
-    }
+  const [description,
+    setDescription] =
+      useState("");
 
-  ];
+  const [techStack,
+    setTechStack] =
+      useState("");
+
+  const [deadline,
+    setDeadline] =
+      useState("");
+
+  const [color,
+    setColor] =
+      useState("#dcecff");
 
   // FETCH
 
   useEffect(() => {
 
-    fetchData();
-
-    const channel =
-      supabase
-
-        .channel(
-          "projects-live"
-        )
-
-        .on(
-
-          "postgres_changes",
-
-          {
-
-            event: "*",
-
-            schema: "public",
-
-            table: "tasks"
-
-          },
-
-          () => {
-
-            fetchData();
-
-          }
-
-        )
-
-        .subscribe();
-
-    return () => {
-
-      supabase.removeChannel(
-        channel
-      );
-
-    };
+    fetchProjects();
 
   }, []);
 
-  const fetchData =
+  const fetchProjects =
     async () => {
+
+      setLoading(true);
+
+      const {
+
+        data: projectData
+
+      } = await supabase
+
+        .from("projects")
+
+        .select("*")
+
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
+        );
 
       const {
 
@@ -128,6 +129,10 @@ function Projects() {
 
         .select("*");
 
+      setProjects(
+        projectData || []
+      );
+
       setTasks(
         taskData || []
       );
@@ -136,650 +141,488 @@ function Projects() {
         userData || []
       );
 
+      setLoading(false);
+
     };
 
-  // PROJECT STATS
+  // RESET
 
-  const getProjectStats =
-    (team) => {
+  const resetForm =
+    () => {
 
-      const projectTasks =
-        tasks.filter(
-          (task) =>
-            task.team_name ===
-            team
+      setName("");
+
+      setDescription("");
+
+      setTechStack("");
+
+      setDeadline("");
+
+      setColor("#dcecff");
+
+      setEditing(false);
+
+      setSelectedProject(null);
+
+    };
+
+  // CREATE
+
+  const createProject =
+    async () => {
+
+      if (
+        !name ||
+        !deadline
+      ) return;
+
+      await supabase
+
+        .from("projects")
+
+        .insert([{
+
+          name,
+
+          description,
+
+          tech_stack:
+            techStack,
+
+          deadline,
+
+          color
+
+        }]);
+
+      closeModal();
+
+      fetchProjects();
+
+    };
+
+  // UPDATE
+
+  const updateProject =
+    async () => {
+
+      await supabase
+
+        .from("projects")
+
+        .update({
+
+          name,
+
+          description,
+
+          tech_stack:
+            techStack,
+
+          deadline,
+
+          color
+
+        })
+
+        .eq(
+          "id",
+          selectedProject.id
         );
 
-      const completed =
-        projectTasks.filter(
-          (task) =>
-            task.status ===
-            "completed"
-        ).length;
+      closeModal();
 
-      const pending =
-        projectTasks.filter(
-          (task) =>
-            task.status ===
-            "pending"
-        ).length;
-
-      const progress =
-        projectTasks.filter(
-          (task) =>
-            task.status ===
-            "in progress"
-        ).length;
-
-      const total =
-        projectTasks.length;
-
-      const percentage =
-        total > 0
-
-          ? Math.round(
-
-              (
-                completed /
-                total
-              ) * 100
-
-            )
-
-          : 0;
-
-      const delayed =
-        pending > 3;
-
-      return {
-
-        completed,
-        pending,
-        progress,
-        total,
-        percentage,
-        delayed
-
-      };
+      fetchProjects();
 
     };
 
-  // HEALTH
+  // DELETE
 
-  const getHealth =
-    (percentage) => {
+  const deleteProject =
+    async (id) => {
 
-      if (
-        percentage >= 75
-      ) {
+      const confirmDelete =
+        window.confirm(
+          "Delete this project?"
+        );
 
-        return {
+      if (!confirmDelete)
+        return;
 
-          label:
-            "Healthy",
+      await supabase
 
-          color:
-            "bg-[#d8f7df]"
+        .from("projects")
 
-        };
+        .delete()
 
-      }
+        .eq("id", id);
 
-      if (
-        percentage >= 45
-      ) {
-
-        return {
-
-          label:
-            "Moderate",
-
-          color:
-            "bg-[#fff5b8]"
-
-        };
-
-      }
-
-      return {
-
-        label:
-          "At Risk",
-
-        color:
-          "bg-[#ffe0f0]"
-
-      };
+      fetchProjects();
 
     };
 
-  return (
+  // EDIT
 
-    <div className="bg-[#f7f3ea] p-8 space-y-7 relative min-h-screen">
+  const openEdit =
+    (project) => {
 
-      {/* HEADER */}
+      setEditing(true);
 
-      <div className="bg-[#fff7d6] border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+      setSelectedProject(
+        project
+      );
+
+      setName(
+        project.name
+      );
+
+      setDescription(
+        project.description
+      );
+
+      setTechStack(
+        project.tech_stack
+      );
+
+      setDeadline(
+        project.deadline
+      );
+
+      setColor(
+        project.color
+      );
+
+      setShowModal(true);
+
+    };
+
+  // CLOSE
+
+  const closeModal =
+    () => {
+
+      setShowModal(false);
+
+      resetForm();
+
+    };
+
+  // FILTER
+
+  const filteredProjects =
+    projects.filter(
+      (project) =>
+
+        project.name
+          ?.toLowerCase()
+
+          .includes(
+            search.toLowerCase()
+          )
+    );
+
+  // LOADING
+
+  if (loading) {
+
+    return (
+
+      <div className="h-screen bg-[#f7f3ea] flex items-center justify-center">
 
         <h1 className="text-5xl font-black text-[#1d2b53]">
 
-          Projects
+          Loading Projects...
 
         </h1>
 
-        <p className="text-[#5c6b8a] mt-2 text-lg">
-
-          Team project overview & sprint health
-
-        </p>
-
       </div>
 
-      {/* PROJECT CARDS */}
+    );
 
-      <div className="grid lg:grid-cols-3 gap-6">
+  }
 
-        {
+  return (
 
-          projects.map(
-            (project) => {
+    <div className="min-h-screen bg-[#f7f3ea] p-8">
 
-              const stats =
-                getProjectStats(
-                  project.team
-                );
+      {/* HEADER */}
 
-              const health =
-                getHealth(
-                  stats.percentage
-                );
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6 mb-8">
 
-              return (
+        <div>
 
-                <button
+          <h1 className="text-6xl font-black text-[#1d2b53]">
 
-                  key={project.name}
+            Projects
 
-                  onClick={() =>
-                    setSelectedProject(
-                      project
-                    )
-                  }
+          </h1>
 
-                  className={`
+          <p className="text-[#5c6b8a] mt-3 text-xl">
 
-                    ${project.color}
+            Manage projects, teams & sprint workflows
 
-                    border-[4px]
-                    border-[#1d2b53]
-                    rounded-[32px]
-                    p-7
-                    shadow-[6px_6px_0px_#1d2b53]
-                    text-left
-                    hover:translate-y-[2px]
-                    transition-all
+          </p>
 
-                  `}
+        </div>
 
-                >
+        {/* RIGHT */}
 
-                  {/* TOP */}
+        <div className="flex flex-col md:flex-row gap-4">
 
-                  <div className="flex items-center justify-between mb-7">
+          {/* SEARCH */}
 
-                    <div className="w-16 h-16 rounded-2xl bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
+          <div className="flex items-center gap-3 bg-white border-[4px] border-[#1d2b53] rounded-[24px] px-5 py-4 shadow-[4px_4px_0px_#1d2b53]">
 
-                      <FolderKanban
-                        size={30}
-                        className="text-[#1d2b53]"
-                      />
-
-                    </div>
-
-                    <div className={`
-
-                      px-4 py-2 rounded-full
-                      border-[2px]
-                      border-[#1d2b53]
-                      text-sm font-bold
-
-                      ${health.color}
-
-                    `}>
-
-                      {
-                        health.label
-                      }
-
-                    </div>
-
-                  </div>
-
-                  {/* INFO */}
-
-                  <h2 className="text-4xl font-black text-[#1d2b53]">
-
-                    {
-                      project.name
-                    }
-
-                  </h2>
-
-                  <p className="text-[#5c6b8a] mt-2 capitalize">
-
-                    {
-                      project.team
-                    } team
-
-                  </p>
-
-                  {/* PROGRESS */}
-
-                  <div className="mt-7">
-
-                    <div className="flex items-center justify-between mb-3">
-
-                      <p className="font-bold text-[#1d2b53]">
-
-                        Sprint Progress
-
-                      </p>
-
-                      <p className="font-black text-[#1d2b53]">
-
-                        {
-                          stats.percentage
-                        }%
-
-                      </p>
-
-                    </div>
-
-                    <div className="w-full h-5 rounded-full bg-white border-[2px] border-[#1d2b53] overflow-hidden">
-
-                      <div
-
-                        className="h-full bg-[#3b82f6]"
-
-                        style={{
-                          width: `${stats.percentage}%`
-                        }}
-
-                      />
-
-                    </div>
-
-                  </div>
-
-                  {/* STATS */}
-
-                  <div className="grid grid-cols-3 gap-3 mt-7">
-
-                    <div className="bg-white border-[2px] border-[#1d2b53] rounded-2xl p-4">
-
-                      <p className="text-xs text-[#5c6b8a] font-bold">
-
-                        Done
-
-                      </p>
-
-                      <h3 className="text-2xl font-black text-[#1d2b53] mt-2">
-
-                        {
-                          stats.completed
-                        }
-
-                      </h3>
-
-                    </div>
-
-                    <div className="bg-white border-[2px] border-[#1d2b53] rounded-2xl p-4">
-
-                      <p className="text-xs text-[#5c6b8a] font-bold">
-
-                        Pending
-
-                      </p>
-
-                      <h3 className="text-2xl font-black text-[#1d2b53] mt-2">
-
-                        {
-                          stats.pending
-                        }
-
-                      </h3>
-
-                    </div>
-
-                    <div className="bg-white border-[2px] border-[#1d2b53] rounded-2xl p-4">
-
-                      <p className="text-xs text-[#5c6b8a] font-bold">
-
-                        Active
-
-                      </p>
-
-                      <h3 className="text-2xl font-black text-[#1d2b53] mt-2">
-
-                        {
-                          stats.progress
-                        }
-
-                      </h3>
-
-                    </div>
-
-                  </div>
-
-                  {/* FOOTER */}
-
-                  <div className="mt-7 flex items-center justify-between">
-
-                    <div>
-
-                      <p className="text-sm text-[#5c6b8a]">
-
-                        Deadline
-
-                      </p>
-
-                      <h4 className="font-black text-[#1d2b53]">
-
-                        {
-                          project.deadline
-                        }
-
-                      </h4>
-
-                    </div>
-
-                    <ChevronRight
-                      size={28}
-                      className="text-[#1d2b53]"
-                    />
-
-                  </div>
-
-                </button>
-
-              );
-
-            }
-          )
-
-        }
-
-      </div>
-
-      {/* TIMELINE + ALERTS */}
-
-      <div className="grid lg:grid-cols-3 gap-6">
-
-        {/* TIMELINE */}
-
-        <div className="lg:col-span-2 bg-white border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[6px_6px_0px_#1d2b53]">
-
-          <div className="flex items-center gap-3 mb-8">
-
-            <Activity
-              size={30}
-              className="text-[#3b82f6]"
+            <Search
+              size={22}
+              className="text-[#5c6b8a]"
             />
 
-            <h2 className="text-3xl font-black text-[#1d2b53]">
+            <input
 
-              Sprint Timeline
+              type="text"
 
-            </h2>
+              placeholder="Search project..."
 
-          </div>
+              value={search}
 
-          <div className="flex items-center justify-between gap-4">
-
-            {
-
-              [
-
-                "Research",
-                "Design",
-                "Development",
-                "Testing",
-                "Deployment"
-
-              ].map(
-                (
-                  stage,
-                  index
-                ) => (
-
-                  <div
-
-                    key={stage}
-
-                    className="flex-1 text-center"
-
-                  >
-
-                    <div className={`
-
-                      w-16 h-16 mx-auto
-                      rounded-2xl
-                      border-[3px] border-[#1d2b53]
-                      flex items-center justify-center
-                      font-black text-lg
-
-                      ${
-                        index < 3
-
-                        ? "bg-[#3b82f6] text-white"
-
-                        : "bg-white text-[#1d2b53]"
-                      }
-
-                    `}>
-
-                      {
-                        index + 1
-                      }
-
-                    </div>
-
-                    <p className="mt-4 font-bold text-[#1d2b53]">
-
-                      {stage}
-
-                    </p>
-
-                  </div>
-
+              onChange={(e) =>
+                setSearch(
+                  e.target.value
                 )
-              )
+              }
 
-            }
+              className="bg-transparent outline-none text-[#1d2b53] font-semibold w-[220px]"
 
-          </div>
-
-        </div>
-
-        {/* ALERTS */}
-
-        <div className="bg-[#ffe0f0] border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[6px_6px_0px_#1d2b53]">
-
-          <div className="flex items-center gap-3 mb-8">
-
-            <AlertTriangle
-              size={28}
-              className="text-[#ec4899]"
             />
 
-            <h2 className="text-3xl font-black text-[#1d2b53]">
-
-              Risk Alerts
-
-            </h2>
-
           </div>
 
-          <div className="space-y-5">
+          {/* CREATE */}
 
-            {
+          <button
 
-              projects.map(
-                (project) => {
-
-                  const stats =
-                    getProjectStats(
-                      project.team
-                    );
-
-                  return (
-
-                    <div
-
-                      key={project.name}
-
-                      className="bg-white border-[3px] border-[#1d2b53] rounded-[24px] p-5"
-
-                    >
-
-                      <div className="flex items-center justify-between mb-3">
-
-                        <h3 className="font-black text-[#1d2b53]">
-
-                          {
-                            project.name
-                          }
-
-                        </h3>
-
-                        {
-
-                          stats.delayed && (
-
-                            <div className="px-3 py-1 bg-[#ffe0f0] border-[2px] border-[#1d2b53] rounded-full text-xs font-bold">
-
-                              Risk
-
-                            </div>
-
-                          )
-
-                        }
-
-                      </div>
-
-                      <p className="text-[#5c6b8a] leading-7">
-
-                        {
-
-                          stats.delayed
-
-                          ? `${stats.pending} pending tasks delaying sprint progress.`
-
-                          : "Project sprint running smoothly."
-
-                        }
-
-                      </p>
-
-                    </div>
-
-                  );
-
-                }
-              )
-
+            onClick={() =>
+              setShowModal(true)
             }
 
-          </div>
+            className="flex items-center gap-3 bg-[#3b82f6] text-white px-7 py-4 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[5px_5px_0px_#1d2b53] font-black text-lg hover:translate-y-[2px] transition-all"
+
+          >
+
+            <Plus size={24} />
+
+            Create Project
+
+          </button>
 
         </div>
 
       </div>
 
-      {/* ACTIVITY */}
+      {/* OVERVIEW */}
 
-      <div className="bg-white border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
 
-        <div className="flex items-center gap-3 mb-8">
+        {/* TOTAL */}
 
-          <Clock3
-            size={28}
-            className="text-[#f59e0b]"
-          />
+        <div className="bg-[#dcecff] border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[5px_5px_0px_#1d2b53]">
 
-          <h2 className="text-3xl font-black text-[#1d2b53]">
+          <div className="flex items-center justify-between mb-5">
 
-            Recent Activity
+            <FolderKanban
+              size={34}
+              className="text-[#1d2b53]"
+            />
+
+            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
+
+              Projects
+
+            </div>
+
+          </div>
+
+          <h2 className="text-6xl font-black text-[#1d2b53]">
+
+            {
+              projects.length
+            }
 
           </h2>
 
         </div>
 
-        <div className="space-y-5">
+        {/* TASKS */}
 
-          {
+        <div className="bg-[#fff5b8] border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[5px_5px_0px_#1d2b53]">
 
-            tasks
+          <div className="flex items-center justify-between mb-5">
 
-              .slice(0, 6)
+            <Code2
+              size={34}
+              className="text-[#1d2b53]"
+            />
 
-              .map(
-                (task) => (
+            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
+
+              Tasks
+
+            </div>
+
+          </div>
+
+          <h2 className="text-6xl font-black text-[#1d2b53]">
+
+            {
+              tasks.filter(
+                (task) =>
+                  !task.is_deleted
+              ).length
+            }
+
+          </h2>
+
+        </div>
+
+        {/* USERS */}
+
+        <div className="bg-[#d8f7df] border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[5px_5px_0px_#1d2b53]">
+
+          <div className="flex items-center justify-between mb-5">
+
+            <Users
+              size={34}
+              className="text-[#1d2b53]"
+            />
+
+            <div className="bg-white border-[3px] border-[#1d2b53] rounded-full px-4 py-2 text-sm font-black">
+
+              Members
+
+            </div>
+
+          </div>
+
+          <h2 className="text-6xl font-black text-[#1d2b53]">
+
+            {
+              users.length
+            }
+
+          </h2>
+
+        </div>
+
+      </div>
+
+      {/* PROJECTS */}
+
+      {
+
+        filteredProjects.length === 0 ? (
+
+          <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-14 text-center shadow-[6px_6px_0px_#1d2b53]">
+
+            <FolderKanban
+              size={50}
+              className="mx-auto text-[#5c6b8a]"
+            />
+
+            <h2 className="text-4xl font-black text-[#1d2b53] mt-6">
+
+              No Projects Found
+
+            </h2>
+
+          </div>
+
+        ) : (
+
+          <div className="grid xl:grid-cols-2 gap-7">
+
+            {
+
+              filteredProjects.map(
+                (project) => (
 
                   <div
+                    key={
+                      project.id
+                    }
 
-                    key={task.id}
-
-                    className="bg-[#f7f3ea] border-[3px] border-[#1d2b53] rounded-[24px] p-5 flex items-center justify-between"
-
+                    className="relative"
                   >
 
-                    <div>
+                    {/* CARD */}
 
-                      <h3 className="font-black text-[#1d2b53] text-lg">
+                    <ProjectCard
 
-                        {
-                          task.title
+                      project={
+                        project
+                      }
+
+                      tasks={
+                        tasks
+                      }
+
+                      users={
+                        users
+                      }
+
+                      onClick={() =>
+                        setSelectedProject(
+                          project
+                        )
+                      }
+
+                    />
+
+                    {/* ACTIONS */}
+
+                    <div className="absolute top-6 right-6 flex gap-3">
+
+                      {/* EDIT */}
+
+                      <button
+
+                        onClick={() =>
+                          openEdit(
+                            project
+                          )
                         }
 
-                      </h3>
+                        className="w-14 h-14 rounded-2xl bg-white border-[3px] border-[#1d2b53] flex items-center justify-center shadow-[3px_3px_0px_#1d2b53] hover:translate-y-[2px] transition-all"
 
-                      <p className="text-[#5c6b8a] capitalize mt-1">
+                      >
 
-                        {
-                          task.team_name
-                        } team
+                        <Pencil
+                          size={22}
+                          className="text-[#1d2b53]"
+                        />
 
-                      </p>
+                      </button>
 
-                    </div>
+                      {/* DELETE */}
 
-                    <div className={`
+                      <button
 
-                      px-4 py-2 rounded-full
-                      border-[2px] border-[#1d2b53]
-                      text-sm font-bold capitalize
+                        onClick={() =>
+                          deleteProject(
+                            project.id
+                          )
+                        }
 
-                      ${
-                        task.status ===
-                        "completed"
+                        className="w-14 h-14 rounded-2xl bg-red-100 border-[3px] border-red-500 flex items-center justify-center shadow-[3px_3px_0px_#ef4444] hover:translate-y-[2px] transition-all"
 
-                        ? "bg-[#d8f7df]"
+                      >
 
-                        : task.status ===
-                          "in progress"
+                        <Trash2
+                          size={22}
+                          className="text-red-600"
+                        />
 
-                        ? "bg-[#fff5b8]"
-
-                        : "bg-[#ffe0f0]"
-                      }
-
-                    `}>
-
-                      {
-                        task.status
-                      }
+                      </button>
 
                     </div>
 
@@ -788,127 +631,246 @@ function Projects() {
                 )
               )
 
-          }
+            }
 
-        </div>
+          </div>
 
-      </div>
+        )
 
-      {/* DRAWER */}
+      }
+
+      {/* MODAL */}
 
       {
 
-        selectedProject && (
+        showModal && (
 
-          <div className="fixed top-0 right-0 h-screen w-[430px] bg-[#f7f3ea] border-l-[5px] border-[#1d2b53] shadow-[-6px_0px_0px_#1d2b53] p-7 overflow-y-auto z-50">
+          <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
 
-            <div className="flex items-center justify-between mb-7">
+            <div className="w-full max-w-2xl bg-[#f7f3ea] border-[5px] border-[#1d2b53] rounded-[38px] shadow-[10px_10px_0px_#1d2b53] overflow-hidden">
 
-              <h2 className="text-4xl font-black text-[#1d2b53]">
+              {/* HEADER */}
 
-                {
-                  selectedProject.name
-                }
+              <div className="bg-[#fff7d6] border-b-[5px] border-[#1d2b53] px-8 py-7 flex items-center justify-between">
 
-              </h2>
+                <div>
 
-              <button
+                  <h1 className="text-4xl font-black text-[#1d2b53]">
 
-                onClick={() =>
-                  setSelectedProject(
-                    null
-                  )
-                }
+                    {
 
-                className="bg-white border-[3px] border-[#1d2b53] rounded-2xl px-4 py-2 font-bold"
+                      editing
 
-              >
+                      ? "Edit Project"
 
-                Close
+                      : "Create Project"
 
-              </button>
+                    }
 
-            </div>
+                  </h1>
 
-            <div className="space-y-6">
+                  <p className="text-[#5c6b8a] mt-2">
 
-              <div className="bg-white border-[3px] border-[#1d2b53] rounded-[24px] p-5">
+                    Manage sprint project details
 
-                <p className="text-sm text-[#5c6b8a]">
+                  </p>
 
-                  Deadline
+                </div>
 
-                </p>
+                <button
 
-                <h3 className="text-2xl font-black text-[#1d2b53] mt-2">
-
-                  {
-                    selectedProject.deadline
+                  onClick={
+                    closeModal
                   }
 
-                </h3>
+                  className="w-14 h-14 rounded-2xl bg-white border-[3px] border-[#1d2b53] flex items-center justify-center"
+
+                >
+
+                  <X
+                    size={24}
+                    className="text-[#1d2b53]"
+                  />
+
+                </button>
 
               </div>
 
-              <div className="bg-white border-[3px] border-[#1d2b53] rounded-[24px] p-5">
+              {/* FORM */}
 
-                <p className="text-sm text-[#5c6b8a] mb-4">
+              <div className="p-8 space-y-6">
 
-                  Team Members
+                {/* NAME */}
 
-                </p>
+                <div>
 
-                <div className="space-y-3">
+                  <label className="block text-[#1d2b53] font-black mb-3">
 
-                  {
+                    Project Name
 
-                    users
+                  </label>
 
-                      .filter(
-                        (user) =>
-                          user.team_name ===
-                          selectedProject.team
+                  <input
+
+                    type="text"
+
+                    value={name}
+
+                    onChange={(e) =>
+                      setName(
+                        e.target.value
                       )
+                    }
 
-                      .map(
-                        (user) => (
+                    className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 outline-none shadow-[4px_4px_0px_#1d2b53]"
 
-                          <div
+                  />
 
-                            key={user.id}
+                </div>
 
-                            className="flex items-center justify-between bg-[#f7f3ea] border-[2px] border-[#1d2b53] rounded-2xl p-3"
+                {/* DESCRIPTION */}
 
-                          >
+                <div>
 
-                            <div>
+                  <label className="block text-[#1d2b53] font-black mb-3">
 
-                              <h4 className="font-bold text-[#1d2b53]">
+                    Description
 
-                                {
-                                  user.name
-                                }
+                  </label>
 
-                              </h4>
+                  <textarea
 
-                              <p className="text-sm text-[#5c6b8a] capitalize">
+                    rows={4}
 
-                                {
-                                  user.role
-                                }
+                    value={description}
 
-                              </p>
-
-                            </div>
-
-                          </div>
-
-                        )
+                    onChange={(e) =>
+                      setDescription(
+                        e.target.value
                       )
+                    }
+
+                    className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 outline-none resize-none shadow-[4px_4px_0px_#1d2b53]"
+
+                  />
+
+                </div>
+
+                {/* TECH */}
+
+                <div>
+
+                  <label className="block text-[#1d2b53] font-black mb-3">
+
+                    Tech Stack
+
+                  </label>
+
+                  <input
+
+                    type="text"
+
+                    value={techStack}
+
+                    onChange={(e) =>
+                      setTechStack(
+                        e.target.value
+                      )
+                    }
+
+                    placeholder="React, Supabase, Tailwind"
+
+                    className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 outline-none shadow-[4px_4px_0px_#1d2b53]"
+
+                  />
+
+                </div>
+
+                {/* DEADLINE */}
+
+                <div>
+
+                  <label className="block text-[#1d2b53] font-black mb-3">
+
+                    Deadline
+
+                  </label>
+
+                  <input
+
+                    type="date"
+
+                    value={deadline}
+
+                    onChange={(e) =>
+                      setDeadline(
+                        e.target.value
+                      )
+                    }
+
+                    className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 outline-none shadow-[4px_4px_0px_#1d2b53]"
+
+                  />
+
+                </div>
+
+                {/* COLOR */}
+
+                <div>
+
+                  <label className="block text-[#1d2b53] font-black mb-3">
+
+                    Card Color
+
+                  </label>
+
+                  <input
+
+                    type="color"
+
+                    value={color}
+
+                    onChange={(e) =>
+                      setColor(
+                        e.target.value
+                      )
+                    }
+
+                    className="w-28 h-16 rounded-2xl border-[4px] border-[#1d2b53] bg-white p-2"
+
+                  />
+
+                </div>
+
+                {/* BUTTON */}
+
+                <button
+
+                  onClick={
+
+                    editing
+
+                    ? updateProject
+
+                    : createProject
 
                   }
 
-                </div>
+                  className="w-full bg-[#3b82f6] text-white py-5 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[5px_5px_0px_#1d2b53] font-black text-2xl hover:translate-y-[2px] transition-all"
+
+                >
+
+                  {
+
+                    editing
+
+                    ? "Update Project"
+
+                    : "Create Project"
+
+                  }
+
+                </button>
 
               </div>
 
