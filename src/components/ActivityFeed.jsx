@@ -6,7 +6,7 @@ import {
   AlertTriangle,
   Trash2,
   PlusCircle,
-  Linkedin,
+  LinkedIn,
   FolderKanban
 
 } from "lucide-react";
@@ -16,8 +16,6 @@ function ActivityFeed({
   activities = []
 
 }) {
-
-  // ICONS
 
   const getIcon =
     (type) => {
@@ -83,7 +81,7 @@ function ActivityFeed({
 
           return (
 
-            <Linkedin
+            <LinkedIn
               size={24}
               className="text-[#2563eb]"
             />
@@ -105,46 +103,35 @@ function ActivityFeed({
 
     };
 
-  // COLORS
-
   const getColor =
     (type) => {
 
       switch (type) {
 
         case "task_done":
-
           return "bg-[#d8f7df]";
 
         case "task_created":
-
           return "bg-[#dcecff]";
 
         case "task_deleted":
-
           return "bg-[#ffe0f0]";
 
         case "review_needed":
-
           return "bg-[#fff5b8]";
 
         case "new_message":
-
           return "bg-[#fff7d6]";
 
         case "linkedin_update":
-
           return "bg-[#dcecff]";
 
         default:
-
           return "bg-white";
 
       }
 
     };
-
-  // FORMAT TIME
 
   const formatTime =
     (timestamp) => {
@@ -157,19 +144,12 @@ function ActivityFeed({
 
       return date.toLocaleString(
         "en-IN",
-
         {
-
           day: "numeric",
-
           month: "short",
-
           hour: "numeric",
-
           minute: "2-digit"
-
         }
-
       );
 
     };
@@ -202,11 +182,7 @@ function ActivityFeed({
 
           <div className="px-5 py-3 rounded-full bg-[#dcecff] border-[3px] border-[#1d2b53] text-[#1d2b53] font-black text-sm">
 
-            {
-
-              activities.length
-
-            } activities
+            {activities.length} activities
 
           </div>
 
@@ -234,12 +210,6 @@ function ActivityFeed({
                 No Activities Yet
 
               </h2>
-
-              <p className="text-[#5c6b8a] mt-3 leading-7">
-
-                Team activities will appear here in realtime.
-
-              </p>
 
             </div>
 
@@ -294,159 +264,49 @@ function ActivityFeed({
 
                   <div className="flex-1">
 
-                    {/* TOP */}
+                    <h2 className="text-2xl font-black text-[#1d2b53]">
 
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                      {activity.title}
+
+                    </h2>
+
+                    <p className="text-[#5c6b8a] mt-2 leading-7">
+
+                      {activity.description}
+
+                    </p>
+
+                    <div className="mt-5 flex items-center justify-between">
 
                       <div>
 
-                        <h2 className="text-2xl font-black text-[#1d2b53] leading-tight">
+                        <p className="font-black text-[#1d2b53]">
 
-                          {
-                            activity.title
-                          }
+                          {activity.user_name}
 
-                        </h2>
+                        </p>
 
-                        <p className="text-[#5c6b8a] mt-2 leading-7">
+                        <p className="text-[#5c6b8a] text-sm capitalize">
 
-                          {
-                            activity.description
-                          }
+                          {activity.team_name}
 
                         </p>
 
                       </div>
 
-                      {/* TYPE */}
-
-                      <div className="px-4 py-2 rounded-full bg-white border-[3px] border-[#1d2b53] text-sm font-black text-[#1d2b53] capitalize whitespace-nowrap h-fit">
+                      <p className="text-[#5c6b8a] text-sm">
 
                         {
 
-                          activity.type
-                            ?.replaceAll(
-                              "_",
-                              " "
-                            )
+                          formatTime(
+                            activity.created_at
+                          )
 
                         }
 
-                      </div>
+                      </p>
 
                     </div>
-
-                    {/* USER */}
-
-                    <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
-                      <div className="flex items-center gap-4">
-
-                        {/* AVATAR */}
-
-                        <div className="w-14 h-14 rounded-2xl bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center font-black text-[#1d2b53] text-lg">
-
-                          {
-
-                            activity.user_name?.[0]
-
-                          }
-
-                        </div>
-
-                        {/* USER INFO */}
-
-                        <div>
-
-                          <h3 className="font-black text-[#1d2b53] text-lg">
-
-                            {
-                              activity.user_name
-                            }
-
-                          </h3>
-
-                          <div className="flex items-center gap-3 text-[#5c6b8a] text-sm">
-
-                            <span className="capitalize">
-
-                              {
-                                activity.role
-                              }
-
-                            </span>
-
-                            <span>
-
-                              •
-
-                            </span>
-
-                            <span className="capitalize">
-
-                              {
-                                activity.team_name
-                              }
-
-                            </span>
-
-                          </div>
-
-                        </div>
-
-                      </div>
-
-                      {/* TIME */}
-
-                      <div className="flex items-center gap-3 text-[#5c6b8a]">
-
-                        <Clock3
-                          size={18}
-                        />
-
-                        <p className="font-semibold">
-
-                          {
-
-                            formatTime(
-                              activity.created_at
-                            )
-
-                          }
-
-                        </p>
-
-                      </div>
-
-                    </div>
-
-                    {/* TASK */}
-
-                    {
-
-                      activity.task_title && (
-
-                        <div className="mt-6 bg-white border-[3px] border-[#1d2b53] rounded-[22px] p-5">
-
-                          <p className="text-sm text-[#5c6b8a] font-bold uppercase mb-2">
-
-                            Related Task
-
-                          </p>
-
-                          <h3 className="text-xl font-black text-[#1d2b53]">
-
-                            {
-                              activity.task_title
-                            }
-
-                          </h3>
-
-                        </div>
-
-                      )
-
-                    }
 
                   </div>
 

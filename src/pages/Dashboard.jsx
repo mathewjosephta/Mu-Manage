@@ -11,7 +11,7 @@ import {
   Clock3,
   Activity,
   Users,
-  Linkedin,
+  LinkedIn,
   MessageCircle
 
 } from "lucide-react";
@@ -111,6 +111,8 @@ function Dashboard() {
 
   const fetchData =
     async () => {
+
+      setLoading(true);
 
       const {
 
@@ -237,7 +239,6 @@ function Dashboard() {
   const activeTasks =
     tasks.filter(
       (task) =>
-
         !task.is_deleted
     );
 
@@ -275,7 +276,7 @@ function Dashboard() {
       }
     );
 
-  // TODAY UPDATES
+  // TODAY
 
   const today =
     new Date()
@@ -318,7 +319,7 @@ function Dashboard() {
 
       : 0;
 
-  // NOTIFICATION FUNCTIONS
+  // NOTIFICATIONS
 
   const markAsRead =
     async (id) => {
@@ -426,8 +427,6 @@ function Dashboard() {
 
         </div>
 
-        {/* RIGHT */}
-
         <div className="flex items-center gap-5">
 
           {/* LIVE */}
@@ -470,7 +469,7 @@ function Dashboard() {
 
       </div>
 
-      {/* OVERVIEW */}
+      {/* STATS */}
 
       <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
 
@@ -638,7 +637,7 @@ function Dashboard() {
 
       <div className="grid xl:grid-cols-3 gap-7 mb-8">
 
-        {/* DAILY UPDATES */}
+        {/* DAILY */}
 
         <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
 
@@ -679,18 +678,6 @@ function Dashboard() {
 
           </h1>
 
-          <p className="text-[#5c6b8a] mt-3">
-
-            out of
-            {" "}
-            {
-              users.length
-            }
-            {" "}
-            members
-
-          </p>
-
         </div>
 
         {/* LINKEDIN */}
@@ -701,7 +688,7 @@ function Dashboard() {
 
             <div className="w-16 h-16 rounded-[24px] bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center">
 
-              <Linkedin
+              <LinkedIn
                 size={28}
                 className="text-[#2563eb]"
               />
@@ -734,23 +721,9 @@ function Dashboard() {
 
           </h1>
 
-          <div className="w-full h-6 rounded-full bg-[#e7ecf5] border-[3px] border-[#1d2b53] overflow-hidden mt-6">
-
-            <div
-
-              className="h-full bg-[#2563eb]"
-
-              style={{
-                width: `${linkedinPercentage}%`
-              }}
-
-            />
-
-          </div>
-
         </div>
 
-        {/* ACTIVE USERS */}
+        {/* USERS */}
 
         <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
 
@@ -773,12 +746,6 @@ function Dashboard() {
 
               </h2>
 
-              <p className="text-[#5c6b8a]">
-
-                System users
-
-              </p>
-
             </div>
 
           </div>
@@ -790,176 +757,6 @@ function Dashboard() {
             }
 
           </h1>
-
-        </div>
-
-      </div>
-
-      {/* TEAM PROGRESS */}
-
-      <div className="grid xl:grid-cols-3 gap-7 mb-8">
-
-        {
-
-          [
-
-            "canteen",
-            "printer",
-            "campus connect"
-
-          ].map(
-            (team) => (
-
-              <TeamProgress
-
-                key={team}
-
-                teamName={
-                  team
-                }
-
-                tasks={
-                  tasks
-                }
-
-                members={
-                  users
-                }
-
-                updates={
-                  updates
-                }
-
-              />
-
-            )
-          )
-
-        }
-
-      </div>
-
-      {/* ACTIVITY + RISKS */}
-
-      <div className="grid xl:grid-cols-[1fr_400px] gap-8">
-
-        {/* FEED */}
-
-        <ActivityFeed
-
-          activities={
-            activities
-          }
-
-        />
-
-        {/* RISKS */}
-
-        <div className="space-y-6">
-
-          {/* ALERTS */}
-
-          <div className="bg-[#ffe0f0] border-[4px] border-red-500 rounded-[34px] p-7 shadow-[6px_6px_0px_#ef4444]">
-
-            <div className="flex items-center gap-4 mb-6">
-
-              <AlertTriangle
-                size={34}
-                className="text-red-600"
-              />
-
-              <h2 className="text-4xl font-black text-red-600">
-
-                Risk Alerts
-
-              </h2>
-
-            </div>
-
-            <div className="space-y-5">
-
-              {
-
-                overdueTasks.length === 0 && (
-
-                  <div className="bg-white border-[3px] border-[#1d2b53] rounded-[24px] p-5">
-
-                    <p className="font-black text-[#1d2b53]">
-
-                      No sprint risks detected.
-
-                    </p>
-
-                  </div>
-
-                )
-
-              }
-
-              {
-
-                overdueTasks.map(
-                  (task) => (
-
-                    <div
-
-                      key={task.id}
-
-                      className="bg-white border-[3px] border-red-500 rounded-[24px] p-5"
-
-                    >
-
-                      <h3 className="text-xl font-black text-red-600">
-
-                        {
-                          task.title
-                        }
-
-                      </h3>
-
-                      <p className="text-red-500 mt-2 leading-7">
-
-                        Overdue task affecting sprint progress.
-
-                      </p>
-
-                    </div>
-
-                  )
-                )
-
-              }
-
-            </div>
-
-          </div>
-
-          {/* CHAT */}
-
-          <div className="bg-[#dcecff] border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
-
-            <div className="flex items-center gap-4 mb-5">
-
-              <MessageCircle
-                size={30}
-                className="text-[#1d2b53]"
-              />
-
-              <h2 className="text-3xl font-black text-[#1d2b53]">
-
-                Team Chat
-
-              </h2>
-
-            </div>
-
-            <p className="text-[#5c6b8a] leading-8">
-
-              Realtime communication enabled across all sprint teams.
-
-            </p>
-
-          </div>
 
         </div>
 
