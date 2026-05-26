@@ -1,50 +1,60 @@
 import {
-
   BrowserRouter,
   Routes,
-  Route
-
+  Route,
+  Navigate
 } from "react-router-dom";
 
-import Dashboard
-from "./pages/Dashboard";
+import MainLayout from "./layouts/MainLayout";
 
-import Calendar
-from "./pages/Calendar";
+// PAGES
 
-import Projects
-from "./pages/Projects";
+import Dashboard from "./pages/Dashboard";
+import Projects from "./pages/Projects";
+import Tasks from "./pages/Tasks";
+import DailyUpdates from "./pages/DailyUpdates";
+import LinkedinUpdates from "./pages/LinkedinUpdates";
+import TeamChat from "./pages/TeamChat";
 
-import Analytics
-from "./pages/Analytics";
+// AUTH PAGES
 
-import LinkedinUpdate
-from "./pages/LinkedinUpdate";
+import Login from "./pages/Login";
 
-import TeamChat
-from "./pages/TeamChat";
+// STYLES
 
-import Tasks
-from "./pages/Tasks";
-
-import Login
-from "./pages/Login";
-
-import Test
-from "./pages/Test";
-
-import ProtectedRoute
-from "./routes/ProtectedRoute";
-
-import MainLayout
-from "./layouts/MainLayout";
+import "./App.css";
 
 function App() {
 
-  const userRole =
-    localStorage.getItem(
-      "userRole"
+  // USER
+
+  const user =
+    JSON.parse(
+      localStorage.getItem(
+        "user"
+      )
     );
+
+  // PROTECTED ROUTE
+
+  const ProtectedRoute = ({
+    children
+  }) => {
+
+    if (!user) {
+
+      return (
+        <Navigate
+          to="/login"
+          replace
+        />
+      );
+
+    }
+
+    return children;
+
+  };
 
   return (
 
@@ -52,37 +62,25 @@ function App() {
 
       <Routes>
 
-        {/* PUBLIC */}
+        {/* LOGIN */}
 
         <Route
-          path="/"
+
+          path="/login"
+
           element={<Login />}
+
         />
 
-        <Route
-          path="/test"
-          element={<Test />}
-        />
-
-        {/* PROTECTED */}
+        {/* MAIN */}
 
         <Route
+
+          path="/"
 
           element={
 
-            <ProtectedRoute
-
-              userRole={
-                userRole
-              }
-
-              allowedRoles={[
-                "pm",
-                "lead",
-                "member"
-              ]}
-
-            >
+            <ProtectedRoute>
 
               <MainLayout />
 
@@ -92,46 +90,94 @@ function App() {
 
         >
 
-          {/* PM */}
+          {/* DASHBOARD */}
 
           <Route
-            path="/dashboard"
-            element={<Dashboard />}
+
+            index
+
+            element={
+              <Dashboard />
+            }
+
           />
 
+          {/* PROJECTS */}
+
           <Route
-            path="/analytics"
-            element={<Analytics />}
+
+            path="projects"
+
+            element={
+              <Projects />
+            }
+
           />
 
+          {/* TASKS */}
+
           <Route
-            path="/projects"
-            element={<Projects />}
+
+            path="tasks"
+
+            element={
+              <Tasks />
+            }
+
           />
 
-          {/* SHARED */}
+          {/* DAILY UPDATES */}
 
           <Route
-            path="/calendar"
-            element={<Calendar />}
+
+            path="daily-updates"
+
+            element={
+              <DailyUpdates />
+            }
+
           />
 
-          <Route
-            path="/team-chat"
-            element={<TeamChat />}
-          />
+          {/* LINKEDIN */}
 
           <Route
-            path="/tasks"
-            element={<Tasks />}
+
+            path="linkedin-updates"
+
+            element={
+              <LinkedinUpdates />
+            }
+
           />
 
+          {/* TEAM CHAT */}
+
           <Route
-            path="/linkedin-update"
-            element={<LinkedinUpdate />}
+
+            path="team-chat"
+
+            element={
+              <TeamChat />
+            }
+
           />
 
         </Route>
+
+        {/* FALLBACK */}
+
+        <Route
+
+          path="*"
+
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
+
+        />
 
       </Routes>
 
