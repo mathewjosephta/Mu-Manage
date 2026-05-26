@@ -4,10 +4,15 @@ import {
 } from "react";
 
 import {
+
   Plus,
+  Search,
   ClipboardList,
   Clock3,
-  CheckCircle2
+  CheckCircle2,
+  AlertTriangle,
+  X
+
 } from "lucide-react";
 
 import { supabase }
@@ -15,6 +20,9 @@ from "../services/supabase";
 
 import TaskCard
 from "../components/TaskCard";
+
+import ReviewModal
+from "../components/ReviewModal";
 
 function Tasks() {
 
@@ -26,29 +34,38 @@ function Tasks() {
     setUsers] =
       useState([]);
 
-  const [currentUser,
-    setCurrentUser] =
-      useState(null);
+  const [projects,
+    setProjects] =
+      useState([]);
 
-  const [selectedTeam,
-    setSelectedTeam] =
-      useState("canteen");
+  const [loading,
+    setLoading] =
+      useState(true);
 
-  const [showCreate,
-    setShowCreate] =
-      useState(false);
+  const [search,
+    setSearch] =
+      useState("");
 
   const [selectedTask,
     setSelectedTask] =
       useState(null);
 
-  const [comments,
-    setComments] =
-      useState([]);
+  const [reviewTask,
+    setReviewTask] =
+      useState(null);
 
-  const [commentText,
-    setCommentText] =
-      useState("");
+  const [showCreate,
+    setShowCreate] =
+      useState(false);
+
+  // USER
+
+  const currentUser =
+    JSON.parse(
+      localStorage.getItem(
+        "user"
+      )
+    );
 
   // FORM
 
@@ -60,35 +77,29 @@ function Tasks() {
     setDescription] =
       useState("");
 
-  const [assignedTo,
-    setAssignedTo] =
-      useState("");
-
   const [priority,
     setPriority] =
       useState("medium");
+
+  const [assignedTo,
+    setAssignedTo] =
+      useState("");
 
   const [dueDate,
     setDueDate] =
       useState("");
 
-  // TEAMS
+  const [projectId,
+    setProjectId] =
+      useState("");
 
-  const teams = [
-
-    "canteen",
-    "printer",
-    "campus connect"
-
-  ];
-
-  // INITIAL
+  // FETCH
 
   useEffect(() => {
 
-    fetchCurrentUser();
+    fetchData();
 
-    const taskChannel =
+    const channel =
       supabase
 
         .channel(
@@ -111,47 +122,7 @@ function Tasks() {
 
           () => {
 
-            fetchTasks();
-
-          }
-
-        )
-
-        .subscribe();
-
-    const commentChannel =
-      supabase
-
-        .channel(
-          "comments-realtime"
-        )
-
-        .on(
-
-          "postgres_changes",
-
-          {
-
-            event: "*",
-
-            schema: "public",
-
-            table:
-              "task_comments"
-
-          },
-
-          () => {
-
-            if (
-              selectedTask
-            ) {
-
-              fetchComments(
-                selectedTask.id
-              );
-
-            }
+            fetchData();
 
           }
 
@@ -162,107 +133,21 @@ function Tasks() {
     return () => {
 
       supabase.removeChannel(
-        taskChannel
-      );
-
-      supabase.removeChannel(
-        commentChannel
+        channel
       );
 
     };
 
-  }, [selectedTask]);
+  }, []);
 
-  // USER
-
-  const fetchCurrentUser =
+  const fetchData =
     async () => {
 
-      const {
-
-        data: sessionData
-
-      } = await supabase.auth
-        .getUser();
-
-      if (
-        !sessionData?.user
-      ) return;
-
-      const email =
-        sessionData.user.email;
+      setLoading(true);
 
       const {
 
-        data
-
-      } = await supabase
-
-        .from("users")
-
-        .select("*")
-
-        .eq(
-          "email",
-          email
-        )
-
-        .single();
-
-      if (!data)
-        return;
-
-      setCurrentUser(
-        data
-      );
-
-      if (
-        data.role !==
-        "pm"
-      ) {
-
-        setSelectedTeam(
-          data.team_name
-        );
-
-      }
-
-      fetchTasks();
-      fetchUsers();
-
-    };
-
-  // USERS
-
-  const fetchUsers =
-    async () => {
-
-      const {
-
-        data
-
-      } = await supabase
-
-        .from("users")
-
-        .select("*");
-
-      if (data) {
-
-        setUsers(data);
-
-      }
-
-    };
-
-  // TASKS
-
-  const fetchTasks =
-    async () => {
-
-      const {
-
-        data
+        data: taskData
 
       } = await supabase
 
@@ -277,11 +162,39 @@ function Tasks() {
           }
         );
 
-      if (data) {
+      const {
 
-        setTasks(data);
+        data: userData
 
-      }
+      } = await supabase
+
+        .from("users")
+
+        .select("*");
+
+      const {
+
+        data: projectData
+
+      } = await supabase
+
+        .from("projects")
+
+        .select("*");
+
+      setTasks(
+        taskData || []
+      );
+
+      setUsers(
+        userData || []
+      );
+
+      setProjects(
+        projectData || []
+      );
+
+      setLoading(false);
 
     };
 
@@ -292,62 +205,111 @@ function Tasks() {
 
       if (
         !title ||
-        !assignedTo ||
         !dueDate
-      ) {
+      ) return;
 
-        alert(
-          "Fill all fields"
+      const assignedUser =
+        users.find(
+          (user) =>
+            user.email ===
+            assignedTo
         );
 
-        return;
+      await supabase
 
-      }
+        .from("tasks")
 
-      const { error } =
+        .insert([{
+
+          title,
+
+          description,
+
+          priority,
+
+          assigned_to:
+            assignedTo,
+
+          assigned_name:
+            assignedUser?.name ||
+            null,
+
+          due_date:
+            dueDate,
+
+          status: "todo",
+
+          project_id:
+            projectId,
+
+          team_name:
+            currentUser.team_name,
+
+          created_by:
+            currentUser.email,
+
+          is_deleted:
+            false
+
+        }]);
+
+      // NOTIFICATION
+
+      if (assignedTo) {
+
         await supabase
 
-          .from("tasks")
+          .from(
+            "notifications"
+          )
 
           .insert([{
 
-            title,
-            description,
-            assigned_to:
+            user_email:
               assignedTo,
-            priority,
-            due_date:
-              dueDate,
-            team_name:
-              selectedTeam,
-            status:
-              "pending",
-            created_by:
-              currentUser.email
+
+            title:
+              "New Task Assigned",
+
+            message:
+              `You were assigned "${title}"`,
+
+            type:
+              "task_assigned",
+
+            is_read:
+              false
 
           }]);
 
-      if (error) {
-
-        console.log(
-          error
-        );
-
-        return;
-
       }
 
+      resetForm();
+
+      fetchData();
+
+    };
+
+  // RESET
+
+  const resetForm =
+    () => {
+
       setTitle("");
+
       setDescription("");
-      setAssignedTo("");
+
       setPriority(
         "medium"
       );
+
+      setAssignedTo("");
+
       setDueDate("");
 
-      setShowCreate(
-        false
-      );
+      setProjectId("");
+
+      setShowCreate(false);
 
     };
 
@@ -364,453 +326,742 @@ function Tasks() {
         .from("tasks")
 
         .update({
+
           status
+
         })
 
-        .eq(
-          "id",
-          id
-        );
+        .eq("id", id);
+
+      fetchData();
 
     };
 
-  // COMMENTS
+  // APPROVE
 
-  const fetchComments =
-    async (
-      taskId
-    ) => {
-
-      const {
-
-        data
-
-      } = await supabase
-
-        .from(
-          "task_comments"
-        )
-
-        .select("*")
-
-        .eq(
-          "task_id",
-          taskId
-        )
-
-        .order(
-          "created_at",
-          {
-            ascending: true
-          }
-        );
-
-      if (data) {
-
-        setComments(
-          data
-        );
-
-      }
-
-    };
-
-  const addComment =
-    async () => {
-
-      if (
-        !commentText
-      ) return;
+  const approveTask =
+    async (id) => {
 
       await supabase
 
-        .from(
-          "task_comments"
-        )
+        .from("tasks")
 
-        .insert([{
+        .update({
 
-          task_id:
-            selectedTask.id,
+          status: "done"
 
-          user_name:
-            currentUser.name,
+        })
 
-          user_role:
-            currentUser.role,
+        .eq("id", id);
 
-          comment:
-            commentText
+      setReviewTask(null);
 
-        }]);
-
-      setCommentText("");
+      fetchData();
 
     };
 
-  // OPEN TASK
+  // REJECT
 
-  const openTask =
-    (task) => {
+  const rejectTask =
+    async (id) => {
 
-      setSelectedTask(
-        task
-      );
+      await supabase
 
-      fetchComments(
-        task.id
-      );
+        .from("tasks")
+
+        .update({
+
+          status:
+            "in progress"
+
+        })
+
+        .eq("id", id);
+
+      setReviewTask(null);
+
+      fetchData();
 
     };
 
-  // FILTERS
+  // DELETE
+
+  const deleteTask =
+    async (id) => {
+
+      await supabase
+
+        .from("tasks")
+
+        .update({
+
+          is_deleted:
+            true,
+
+          deleted_by:
+            currentUser.email,
+
+          deleted_at:
+            new Date()
+
+        })
+
+        .eq("id", id);
+
+      fetchData();
+
+    };
+
+  // FILTER
+
+  const visibleTasks =
+
+    currentUser.role ===
+    "pm"
+
+      ? tasks
+
+      : tasks.filter(
+          (task) =>
+            !task.is_deleted
+        );
 
   const filteredTasks =
-    tasks.filter(
+    visibleTasks.filter(
       (task) =>
-        task.team_name ===
-        selectedTeam
+
+        task.title
+          ?.toLowerCase()
+
+          .includes(
+            search.toLowerCase()
+          )
     );
 
-  const pending =
+  // GROUPS
+
+  const todoTasks =
     filteredTasks.filter(
       (task) =>
         task.status ===
-        "pending"
+        "todo"
     );
 
-  const progress =
+  const progressTasks =
     filteredTasks.filter(
       (task) =>
         task.status ===
         "in progress"
     );
 
-  const completed =
+  const reviewTasks =
     filteredTasks.filter(
       (task) =>
         task.status ===
-        "completed"
+        "under review"
     );
 
-  // COLORS
+  const doneTasks =
+    filteredTasks.filter(
+      (task) =>
+        task.status ===
+        "done"
+    );
 
-  const teamColors = [
+  // LOADING
 
-    "bg-[#dcecff]",
-    "bg-[#ffe0f0]",
-    "bg-[#fff5b8]"
+  if (loading) {
 
-  ];
+    return (
 
-  return (
+      <div className="h-screen bg-[#f7f3ea] flex items-center justify-center">
 
-    <div className="bg-[#f7f3ea] p-8 space-y-7 relative">
+        <h1 className="text-5xl font-black text-[#1d2b53]">
 
-      {/* HEADER */}
+          Loading Tasks...
 
-      <div className="bg-white border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[6px_6px_0px_#1d2b53] flex items-center justify-between">
-
-        <div>
-
-          <h1 className="text-5xl font-black text-[#1d2b53]">
-
-            Tasks
-
-          </h1>
-
-          <p className="text-[#5c6b8a] mt-2 text-lg">
-
-            Team workflow management
-
-          </p>
-
-        </div>
-
-        <button
-
-          onClick={() =>
-            setShowCreate(
-              !showCreate
-            )
-          }
-
-          className="flex items-center gap-3 bg-[#3b82f6] text-white px-7 py-4 rounded-[22px] border-[4px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-black hover:translate-y-[2px] transition-all"
-
-        >
-
-          <Plus size={22} />
-
-          {
-
-            showCreate
-
-            ? "Close"
-
-            : "Create Task"
-
-          }
-
-        </button>
+        </h1>
 
       </div>
 
-      {/* TEAM CARDS */}
+    );
 
-      <div className="grid lg:grid-cols-3 gap-5">
+  }
+
+  // COLUMN
+
+  const renderColumn = (
+    title,
+    tasksList,
+    color,
+    icon
+  ) => (
+
+    <div className={`
+
+      rounded-[34px]
+      border-[4px]
+      border-[#1d2b53]
+      p-6
+      min-h-[700px]
+      shadow-[6px_6px_0px_#1d2b53]
+
+      ${color}
+
+    `}>
+
+      {/* HEADER */}
+
+      <div className="flex items-center justify-between mb-7">
+
+        <div className="flex items-center gap-4">
+
+          <div className="w-14 h-14 rounded-2xl bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
+
+            {icon}
+
+          </div>
+
+          <div>
+
+            <h2 className="text-3xl font-black text-[#1d2b53]">
+
+              {title}
+
+            </h2>
+
+            <p className="text-[#5c6b8a]">
+
+              {
+
+                tasksList.length
+
+              } tasks
+
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* TASKS */}
+
+      <div className="space-y-5">
 
         {
 
-          teams.map(
-            (
-              team,
-              index
-            ) => {
+          tasksList.length === 0 && (
 
-              const activeCount =
-                tasks.filter(
-                  (task) =>
+            <div className="bg-white border-[4px] border-dashed border-[#1d2b53] rounded-[28px] p-10 text-center">
 
-                    task.team_name ===
-                    team &&
+              <ClipboardList
+                size={40}
+                className="mx-auto text-[#5c6b8a]"
+              />
 
-                    task.status !==
-                    "completed"
-                ).length;
+              <p className="mt-5 text-[#5c6b8a] font-bold">
 
-              return (
+                No tasks
 
-                <button
+              </p>
 
-                  key={team}
+            </div>
 
-                  onClick={() =>
-                    setSelectedTeam(
-                      team
-                    )
-                  }
+          )
 
-                  className={`
+        }
 
-                    p-7 rounded-[28px]
-                    border-[4px] border-[#1d2b53]
-                    text-left transition-all
+        {
 
-                    ${
-                      selectedTeam ===
-                      team
+          tasksList.map(
+            (task) => (
 
-                      ? "shadow-[6px_6px_0px_#1d2b53] scale-[1.02]"
+              <TaskCard
 
-                      : "shadow-[3px_3px_0px_#1d2b53]"
-                    }
+                key={task.id}
 
-                    ${
-                      teamColors[
-                        index
-                      ]
-                    }
+                task={task}
 
-                  `}
+                currentUser={
+                  currentUser
+                }
 
-                >
+                updateStatus={
+                  updateStatus
+                }
 
-                  <div className="flex items-center justify-between">
+                deleteTask={
+                  deleteTask
+                }
 
-                    <div>
+                openReviewModal={
+                  setReviewTask
+                }
 
-                      <h2 className="text-3xl font-black capitalize text-[#1d2b53]">
+                setSelectedTask={
+                  setSelectedTask
+                }
 
-                        {team}
+              />
 
-                      </h2>
-
-                      <p className="text-[#5c6b8a] mt-2">
-
-                        Active Tasks
-
-                      </p>
-
-                    </div>
-
-                    <div className="w-16 h-16 rounded-2xl bg-white border-[3px] border-[#1d2b53] flex items-center justify-center text-2xl font-black text-[#1d2b53]">
-
-                      {
-                        activeCount
-                      }
-
-                    </div>
-
-                  </div>
-
-                </button>
-
-              );
-
-            }
+            )
           )
 
         }
 
       </div>
 
-      {/* CREATE */}
+    </div>
+
+  );
+
+  return (
+
+    <div className="min-h-screen bg-[#f7f3ea] p-8">
+
+      {/* HEADER */}
+
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6 mb-8">
+
+        <div>
+
+          <h1 className="text-6xl font-black text-[#1d2b53]">
+
+            Sprint Board
+
+          </h1>
+
+          <p className="text-[#5c6b8a] mt-3 text-xl">
+
+            Manage sprint workflow & reviews
+
+          </p>
+
+        </div>
+
+        {/* RIGHT */}
+
+        <div className="flex flex-col md:flex-row gap-4">
+
+          {/* SEARCH */}
+
+          <div className="flex items-center gap-3 bg-white border-[4px] border-[#1d2b53] rounded-[24px] px-5 py-4 shadow-[4px_4px_0px_#1d2b53]">
+
+            <Search
+              size={22}
+              className="text-[#5c6b8a]"
+            />
+
+            <input
+
+              type="text"
+
+              placeholder="Search task..."
+
+              value={search}
+
+              onChange={(e) =>
+                setSearch(
+                  e.target.value
+                )
+              }
+
+              className="bg-transparent outline-none text-[#1d2b53] font-semibold w-[220px]"
+
+            />
+
+          </div>
+
+          {/* CREATE */}
+
+          {
+
+            (
+              currentUser.role ===
+              "lead" ||
+
+              currentUser.role ===
+              "pm"
+            ) && (
+
+              <button
+
+                onClick={() =>
+                  setShowCreate(
+                    true
+                  )
+                }
+
+                className="flex items-center gap-3 bg-[#3b82f6] text-white px-7 py-4 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[5px_5px_0px_#1d2b53] font-black text-lg hover:translate-y-[2px] transition-all"
+
+              >
+
+                <Plus size={24} />
+
+                Create Task
+
+              </button>
+
+            )
+
+          }
+
+        </div>
+
+      </div>
+
+      {/* BOARD */}
+
+      <div className="grid xl:grid-cols-4 gap-7 items-start">
+
+        {
+
+          renderColumn(
+
+            "Todo",
+
+            todoTasks,
+
+            "bg-[#dcecff]",
+
+            <ClipboardList
+              size={26}
+              className="text-[#1d2b53]"
+            />
+
+          )
+
+        }
+
+        {
+
+          renderColumn(
+
+            "In Progress",
+
+            progressTasks,
+
+            "bg-[#fff5b8]",
+
+            <Clock3
+              size={26}
+              className="text-[#1d2b53]"
+            />
+
+          )
+
+        }
+
+        {
+
+          renderColumn(
+
+            "Under Review",
+
+            reviewTasks,
+
+            "bg-[#ffe0f0]",
+
+            <AlertTriangle
+              size={26}
+              className="text-[#1d2b53]"
+            />
+
+          )
+
+        }
+
+        {
+
+          renderColumn(
+
+            "Done",
+
+            doneTasks,
+
+            "bg-[#d8f7df]",
+
+            <CheckCircle2
+              size={26}
+              className="text-[#1d2b53]"
+            />
+
+          )
+
+        }
+
+      </div>
+
+      {/* CREATE MODAL */}
 
       {
 
         showCreate && (
 
-          <div className="bg-[#fff7d6] border-[4px] border-[#1d2b53] rounded-[32px] p-8 shadow-[6px_6px_0px_#1d2b53]">
+          <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
 
-            <h2 className="text-4xl font-black text-[#1d2b53] mb-7">
+            <div className="w-full max-w-2xl bg-[#f7f3ea] border-[5px] border-[#1d2b53] rounded-[38px] overflow-hidden shadow-[10px_10px_0px_#1d2b53]">
 
-              Create Task
+              {/* HEADER */}
 
-            </h2>
+              <div className="bg-[#fff7d6] border-b-[5px] border-[#1d2b53] px-8 py-7 flex items-center justify-between">
 
-            <div className="grid lg:grid-cols-2 gap-5">
+                <div>
 
-              <input
+                  <h1 className="text-4xl font-black text-[#1d2b53]">
 
-                type="text"
+                    Create Task
 
-                placeholder="Task title"
+                  </h1>
 
-                value={title}
+                  <p className="text-[#5c6b8a] mt-2">
 
-                onChange={(e) =>
-                  setTitle(
-                    e.target.value
-                  )
-                }
+                    Add sprint task
 
-                className="border-[3px] border-[#1d2b53] rounded-[22px] px-5 py-4 bg-white outline-none"
+                  </p>
 
-              />
+                </div>
 
-              <input
+                <button
 
-                type="date"
+                  onClick={
+                    resetForm
+                  }
 
-                value={dueDate}
+                  className="w-14 h-14 rounded-2xl bg-white border-[3px] border-[#1d2b53] flex items-center justify-center"
 
-                onChange={(e) =>
-                  setDueDate(
-                    e.target.value
-                  )
-                }
+                >
 
-                className="border-[3px] border-[#1d2b53] rounded-[22px] px-5 py-4 bg-white outline-none"
+                  <X
+                    size={24}
+                    className="text-[#1d2b53]"
+                  />
 
-              />
+                </button>
 
-              <textarea
+              </div>
 
-                placeholder="Task description"
+              {/* FORM */}
 
-                value={description}
+              <div className="p-8 space-y-6">
 
-                onChange={(e) =>
-                  setDescription(
-                    e.target.value
-                  )
-                }
+                <input
 
-                className="border-[3px] border-[#1d2b53] rounded-[22px] px-5 py-4 bg-white outline-none lg:col-span-2 h-32 resize-none"
+                  type="text"
 
-              />
+                  placeholder="Task title"
 
-              <select
+                  value={title}
 
-                value={assignedTo}
-
-                onChange={(e) =>
-                  setAssignedTo(
-                    e.target.value
-                  )
-                }
-
-                className="border-[3px] border-[#1d2b53] rounded-[22px] px-5 py-4 bg-white outline-none"
-
-              >
-
-                <option value="">
-                  Assign User
-                </option>
-
-                {
-
-                  users
-
-                    .filter(
-                      (user) =>
-
-                        user.team_name ===
-                        selectedTeam
+                  onChange={(e) =>
+                    setTitle(
+                      e.target.value
                     )
+                  }
 
-                    .map(
+                  className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 outline-none"
+
+                />
+
+                <textarea
+
+                  rows={4}
+
+                  placeholder="Description"
+
+                  value={
+                    description
+                  }
+
+                  onChange={(e) =>
+                    setDescription(
+                      e.target.value
+                    )
+                  }
+
+                  className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 outline-none resize-none"
+
+                />
+
+                {/* PRIORITY */}
+
+                <select
+
+                  value={priority}
+
+                  onChange={(e) =>
+                    setPriority(
+                      e.target.value
+                    )
+                  }
+
+                  className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 outline-none"
+
+                >
+
+                  <option value="low">
+
+                    Low
+
+                  </option>
+
+                  <option value="medium">
+
+                    Medium
+
+                  </option>
+
+                  <option value="high">
+
+                    High
+
+                  </option>
+
+                </select>
+
+                {/* ASSIGN */}
+
+                <select
+
+                  value={assignedTo}
+
+                  onChange={(e) =>
+                    setAssignedTo(
+                      e.target.value
+                    )
+                  }
+
+                  className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 outline-none"
+
+                >
+
+                  <option value="">
+
+                    Anyone Can Do
+
+                  </option>
+
+                  {
+
+                    users.map(
                       (user) => (
 
                         <option
-                          key={user.id}
-                          value={user.name}
+
+                          key={
+                            user.id
+                          }
+
+                          value={
+                            user.email
+                          }
+
                         >
 
-                          {user.name}
+                          {
+                            user.name
+                          }
 
                         </option>
 
                       )
                     )
 
-                }
+                  }
 
-              </select>
+                </select>
 
-              <select
+                {/* PROJECT */}
 
-                value={priority}
+                <select
 
-                onChange={(e) =>
-                  setPriority(
-                    e.target.value
-                  )
-                }
+                  value={projectId}
 
-                className="border-[3px] border-[#1d2b53] rounded-[22px] px-5 py-4 bg-white outline-none"
+                  onChange={(e) =>
+                    setProjectId(
+                      e.target.value
+                    )
+                  }
 
-              >
+                  className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 outline-none"
 
-                <option value="low">
-                  Low
-                </option>
+                >
 
-                <option value="medium">
-                  Medium
-                </option>
+                  <option value="">
 
-                <option value="high">
-                  High
-                </option>
+                    Select Project
 
-              </select>
+                  </option>
+
+                  {
+
+                    projects.map(
+                      (project) => (
+
+                        <option
+
+                          key={
+                            project.id
+                          }
+
+                          value={
+                            project.id
+                          }
+
+                        >
+
+                          {
+                            project.name
+                          }
+
+                        </option>
+
+                      )
+                    )
+
+                  }
+
+                </select>
+
+                {/* DATE */}
+
+                <input
+
+                  type="date"
+
+                  value={dueDate}
+
+                  onChange={(e) =>
+                    setDueDate(
+                      e.target.value
+                    )
+                  }
+
+                  className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 outline-none"
+
+                />
+
+                {/* BUTTON */}
+
+                <button
+
+                  onClick={
+                    createTask
+                  }
+
+                  className="w-full bg-[#3b82f6] text-white py-5 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[5px_5px_0px_#1d2b53] font-black text-2xl"
+
+                >
+
+                  Create Task
+
+                </button>
+
+              </div>
 
             </div>
-
-            <button
-
-              onClick={
-                createTask
-              }
-
-              className="mt-7 bg-[#3b82f6] text-white px-8 py-4 rounded-[22px] border-[4px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-black hover:translate-y-[2px] transition-all"
-
-            >
-
-              Create Task
-
-            </button>
 
           </div>
 
@@ -818,200 +1069,27 @@ function Tasks() {
 
       }
 
-      {/* BOARD */}
+      {/* REVIEW */}
 
-      <div className="grid lg:grid-cols-3 gap-6 pb-20">
+      <ReviewModal
 
-        {/* PENDING */}
+        selectedTask={
+          reviewTask
+        }
 
-        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-5">
+        closeModal={() =>
+          setReviewTask(null)
+        }
 
-          <div className="flex items-center justify-between mb-5">
+        approveTask={
+          approveTask
+        }
 
-            <div className="flex items-center gap-3">
+        rejectTask={
+          rejectTask
+        }
 
-              <ClipboardList
-                size={26}
-                className="text-[#1d2b53]"
-              />
-
-              <h2 className="text-2xl font-black text-[#1d2b53]">
-
-                Pending
-
-              </h2>
-
-            </div>
-
-            <div className="px-4 py-2 rounded-full border-[2px] border-[#1d2b53] bg-[#f7f3ea] text-sm font-bold text-[#1d2b53]">
-
-              {
-                pending.length
-              }
-
-            </div>
-
-          </div>
-
-          <div className="space-y-5">
-
-            {
-
-              pending.map(
-                (task) => (
-
-                  <TaskCard
-
-                    key={task.id}
-
-                    task={task}
-
-                    updateStatus={
-                      updateStatus
-                    }
-
-                    setSelectedTask={
-                      openTask
-                    }
-
-                  />
-
-                )
-              )
-
-            }
-
-          </div>
-
-        </div>
-
-        {/* PROGRESS */}
-
-        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-5">
-
-          <div className="flex items-center justify-between mb-5">
-
-            <div className="flex items-center gap-3">
-
-              <Clock3
-                size={26}
-                className="text-[#1d2b53]"
-              />
-
-              <h2 className="text-2xl font-black text-[#1d2b53]">
-
-                In Progress
-
-              </h2>
-
-            </div>
-
-            <div className="px-4 py-2 rounded-full border-[2px] border-[#1d2b53] bg-[#f7f3ea] text-sm font-bold text-[#1d2b53]">
-
-              {
-                progress.length
-              }
-
-            </div>
-
-          </div>
-
-          <div className="space-y-5">
-
-            {
-
-              progress.map(
-                (task) => (
-
-                  <TaskCard
-
-                    key={task.id}
-
-                    task={task}
-
-                    updateStatus={
-                      updateStatus
-                    }
-
-                    setSelectedTask={
-                      openTask
-                    }
-
-                  />
-
-                )
-              )
-
-            }
-
-          </div>
-
-        </div>
-
-        {/* COMPLETED */}
-
-        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[28px] shadow-[5px_5px_0px_#1d2b53] p-5">
-
-          <div className="flex items-center justify-between mb-5">
-
-            <div className="flex items-center gap-3">
-
-              <CheckCircle2
-                size={26}
-                className="text-[#1d2b53]"
-              />
-
-              <h2 className="text-2xl font-black text-[#1d2b53]">
-
-                Completed
-
-              </h2>
-
-            </div>
-
-            <div className="px-4 py-2 rounded-full border-[2px] border-[#1d2b53] bg-[#f7f3ea] text-sm font-bold text-[#1d2b53]">
-
-              {
-                completed.length
-              }
-
-            </div>
-
-          </div>
-
-          <div className="space-y-5">
-
-            {
-
-              completed.map(
-                (task) => (
-
-                  <TaskCard
-
-                    key={task.id}
-
-                    task={task}
-
-                    updateStatus={
-                      updateStatus
-                    }
-
-                    setSelectedTask={
-                      openTask
-                    }
-
-                  />
-
-                )
-              )
-
-            }
-
-          </div>
-
-        </div>
-
-      </div>
+      />
 
     </div>
 
