@@ -6,13 +6,11 @@ import {
 import {
 
   Briefcase,
-  CalendarDays,
   Download,
   Search,
-  CheckCircle2,
-  AlertTriangle,
-  X,
-  ExternalLink
+  ExternalLink,
+  CalendarDays,
+  Plus
 
 } from "lucide-react";
 
@@ -24,12 +22,19 @@ from "xlsx";
 
 function LinkedinUpdates() {
 
+  const currentUser =
+    JSON.parse(
+      localStorage.getItem(
+        "user"
+      )
+    );
+
+  const isPM =
+    currentUser?.role ===
+    "pm";
+
   const [updates,
     setUpdates] =
-      useState([]);
-
-  const [users,
-    setUsers] =
       useState([]);
 
   const [loading,
@@ -48,22 +53,6 @@ function LinkedinUpdates() {
     setShowModal] =
       useState(false);
 
-  // USER
-
-  const currentUser =
-    JSON.parse(
-      localStorage.getItem(
-        "user"
-      )
-    ) || {
-
-      name: "Guest",
-      email: "guest@test.com",
-      role: "member",
-      team_name: "core"
-
-    };
-
   // FORM
 
   const [linkedinUrl,
@@ -78,146 +67,65 @@ function LinkedinUpdates() {
     setChallenges] =
       useState("");
 
-  const [tagFoundation,
-    setTagFoundation] =
-      useState(false);
-
-  const [tagAsiet,
-    setTagAsiet] =
-      useState(false);
-
   // FETCH
 
   useEffect(() => {
 
-    fetchData();
+    fetchUpdates();
 
   }, []);
 
-  const fetchData =
+  const fetchUpdates =
     async () => {
 
       setLoading(true);
 
+      let query =
+        supabase
+
+          .from(
+            "linkedin_updates"
+          )
+
+          .select("*")
+
+          .order(
+            "created_at",
+            {
+              ascending: false
+            }
+          );
+
+      // MEMBERS SEE ONLY THEIR DATA
+
+      if (!isPM) {
+
+        query =
+          query.eq(
+            "user_email",
+            currentUser.email
+          );
+
+      }
+
       const {
 
-        data: updateData,
-        error: updateError
+        data,
+        error
 
-      } = await supabase
+      } = await query;
 
-        .from(
-          "linkedin_updates"
-        )
+      if (error) {
 
-        .select("*")
-
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        );
-
-      const {
-
-        data: userData
-
-      } = await supabase
-
-        .from("users")
-
-        .select("*");
-
-      if (updateError) {
-
-        console.log(
-          updateError
-        );
+        console.log(error);
 
       }
 
       setUpdates(
-        updateData || []
-      );
-
-      setUsers(
-        userData || []
+        data || []
       );
 
       setLoading(false);
-
-    };
-
-  // SUBMIT
-
-  const submitUpdate =
-    async () => {
-
-      if (!linkedinUrl)
-        return;
-
-      await supabase
-
-        .from(
-          "linkedin_updates"
-        )
-
-        .insert([{
-
-          user_email:
-            currentUser.email,
-
-          user_name:
-            currentUser.name,
-
-          role:
-            currentUser.role,
-
-          team_name:
-            currentUser.team_name,
-
-          week_number:
-            selectedWeek,
-
-          linkedin_url:
-            linkedinUrl,
-
-          demo_link:
-            demoLink,
-
-          challenges,
-
-          tagged_foundation:
-            tagFoundation,
-
-          tagged_asiet:
-            tagAsiet
-
-        }]);
-
-      resetForm();
-
-      fetchData();
-
-    };
-
-  // RESET
-
-  const resetForm =
-    () => {
-
-      setLinkedinUrl("");
-
-      setDemoLink("");
-
-      setChallenges("");
-
-      setTagFoundation(false);
-
-      setTagAsiet(false);
-
-      setShowModal(false);
 
     };
 
@@ -241,7 +149,7 @@ function LinkedinUpdates() {
               search.toLowerCase()
             ) ||
 
-          update.team_name
+          update.project_name
             ?.toLowerCase()
 
             .includes(
@@ -249,14 +157,82 @@ function LinkedinUpdates() {
             );
 
         return (
-
           matchesWeek &&
           matchesSearch
-
         );
 
       }
     );
+
+  // SUBMIT
+
+  const submitUpdate =
+    async () => {
+
+      if (!linkedinUrl) {
+
+        alert(
+          "Add linkedin URL"
+        );
+
+        return;
+
+      }
+
+      const {
+
+        error
+
+      } = await supabase
+
+        .from(
+          "linkedin_updates"
+        )
+
+        .insert([{
+
+          user_email:
+            currentUser.email,
+
+          user_name:
+            currentUser.name,
+
+          role:
+            currentUser.role,
+
+          project_name:
+            currentUser.project_name,
+
+          week_number:
+            selectedWeek,
+
+          linkedin_url:
+            linkedinUrl,
+
+          demo_link:
+            demoLink,
+
+          challenges
+
+        }]);
+
+      if (error) {
+
+        console.log(error);
+
+        return;
+
+      }
+
+      setLinkedinUrl("");
+      setDemoLink("");
+      setChallenges("");
+
+      setShowModal(false);
+
+      fetchUpdates();
+
+    };
 
   // EXPORT
 
@@ -265,28 +241,25 @@ function LinkedinUpdates() {
 
       const exportData =
         filteredUpdates.map(
-          (update) => ({
+          (item) => ({
 
             Name:
-              update.user_name,
+              item.user_name,
 
-            Role:
-              update.role,
-
-            Team:
-              update.team_name,
+            Project:
+              item.project_name,
 
             Week:
-              update.week_number,
+              item.week_number,
 
             Linkedin:
-              update.linkedin_url,
+              item.linkedin_url,
 
             Demo:
-              update.demo_link,
+              item.demo_link,
 
             Challenges:
-              update.challenges
+              item.challenges
 
           })
         );
@@ -325,13 +298,13 @@ function LinkedinUpdates() {
 
     return (
 
-      <div className="h-screen bg-[#f7f3ea] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
 
-        <h1 className="text-5xl font-black text-[#1d2b53]">
+        <p className="text-lg text-gray-500">
 
           Loading...
 
-        </h1>
+        </p>
 
       </div>
 
@@ -341,23 +314,31 @@ function LinkedinUpdates() {
 
   return (
 
-    <div className="min-h-screen bg-[#f7f3ea] p-8">
+    <div className="min-h-screen bg-white">
 
       {/* HEADER */}
 
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6 mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
 
         <div>
 
-          <h1 className="text-6xl font-black text-[#1d2b53]">
+          <h1 className="text-4xl font-bold text-black">
 
-            Linkedin Updates
+            {
+
+              isPM
+
+                ? "Team Linkedin Updates"
+
+                : "Linkedin Updates"
+
+            }
 
           </h1>
 
-          <p className="text-[#5c6b8a] mt-3 text-xl">
+          <p className="text-gray-500 mt-2 text-lg">
 
-            Weekly accountability tracking
+            Weekly progress tracking
 
           </p>
 
@@ -369,10 +350,11 @@ function LinkedinUpdates() {
 
           {/* WEEK */}
 
-          <div className="flex items-center gap-3 bg-white border-[4px] border-[#1d2b53] rounded-[24px] px-5 py-4">
+          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-5 py-4">
 
             <CalendarDays
-              size={22}
+              size={20}
+              className="text-gray-500"
             />
 
             <select
@@ -389,7 +371,7 @@ function LinkedinUpdates() {
                 )
               }
 
-              className="bg-transparent outline-none"
+              className="outline-none bg-transparent text-[15px]"
 
             >
 
@@ -415,17 +397,18 @@ function LinkedinUpdates() {
 
           {/* SEARCH */}
 
-          <div className="flex items-center gap-3 bg-white border-[4px] border-[#1d2b53] rounded-[24px] px-5 py-4">
+          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-5 py-4">
 
             <Search
-              size={22}
+              size={20}
+              className="text-gray-500"
             />
 
             <input
 
               type="text"
 
-              placeholder="Search..."
+              placeholder="Search"
 
               value={search}
 
@@ -435,7 +418,7 @@ function LinkedinUpdates() {
                 )
               }
 
-              className="bg-transparent outline-none"
+              className="outline-none text-[15px]"
 
             />
 
@@ -443,45 +426,61 @@ function LinkedinUpdates() {
 
           {/* EXPORT */}
 
-          <button
+          {
 
-            onClick={
-              exportExcel
-            }
+            isPM && (
 
-            className="flex items-center gap-3 bg-[#d8f7df] px-6 py-4 rounded-[24px] border-[4px] border-[#1d2b53] font-black"
+              <button
 
-          >
+                onClick={
+                  exportExcel
+                }
 
-            <Download
-              size={22}
-            />
+                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl text-[15px] font-medium"
 
-            Export
+              >
 
-          </button>
+                <Download
+                  size={18}
+                />
+
+                Export
+
+              </button>
+
+            )
+
+          }
 
           {/* ADD */}
 
-          <button
+          {
 
-            onClick={() =>
-              setShowModal(
-                true
-              )
-            }
+            !isPM && (
 
-            className="flex items-center gap-3 bg-[#2563eb] text-white px-6 py-4 rounded-[24px] border-[4px] border-[#1d2b53] font-black"
+              <button
 
-          >
+                onClick={() =>
+                  setShowModal(
+                    true
+                  )
+                }
 
-            <Briefcase
-              size={22}
-            />
+                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl text-[15px] font-medium"
 
-            Add Update
+              >
 
-          </button>
+                <Plus
+                  size={18}
+                />
+
+                Add Update
+
+              </button>
+
+            )
+
+          }
 
         </div>
 
@@ -489,7 +488,7 @@ function LinkedinUpdates() {
 
       {/* LIST */}
 
-      <div className="grid gap-6">
+      <div className="grid gap-5">
 
         {
 
@@ -500,15 +499,15 @@ function LinkedinUpdates() {
 
                 key={update.id}
 
-                className="bg-white border-[4px] border-[#1d2b53] rounded-[30px] p-7"
+                className="border border-gray-200 rounded-3xl p-6"
 
               >
 
-                <div className="flex items-center justify-between mb-5">
+                <div className="flex items-start justify-between mb-5">
 
                   <div>
 
-                    <h2 className="text-3xl font-black text-[#1d2b53]">
+                    <h2 className="text-2xl font-semibold text-black">
 
                       {
                         update.user_name
@@ -516,17 +515,17 @@ function LinkedinUpdates() {
 
                     </h2>
 
-                    <p className="text-[#5c6b8a] mt-2">
+                    <p className="text-gray-500 mt-1">
 
                       {
-                        update.team_name
+                        update.project_name
                       }
 
                     </p>
 
                   </div>
 
-                  <div className="bg-[#dcecff] border-[3px] border-[#1d2b53] rounded-full px-5 py-3 font-black">
+                  <div className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium">
 
                     Week {
                       update.week_number
@@ -536,27 +535,87 @@ function LinkedinUpdates() {
 
                 </div>
 
-                <a
+                <div className="space-y-4">
 
-                  href={
-                    update.linkedin_url
+                  <a
+
+                    href={
+                      update.linkedin_url
+                    }
+
+                    target="_blank"
+
+                    rel="noreferrer"
+
+                    className="flex items-center gap-3 text-black font-medium"
+
+                  >
+
+                    <ExternalLink
+                      size={18}
+                    />
+
+                    Open Linkedin Post
+
+                  </a>
+
+                  {
+
+                    update.demo_link && (
+
+                      <a
+
+                        href={
+                          update.demo_link
+                        }
+
+                        target="_blank"
+
+                        rel="noreferrer"
+
+                        className="flex items-center gap-3 text-gray-600"
+
+                      >
+
+                        <Briefcase
+                          size={18}
+                        />
+
+                        Open Demo
+
+                      </a>
+
+                    )
+
                   }
 
-                  target="_blank"
+                  {
 
-                  rel="noreferrer"
+                    update.challenges && (
 
-                  className="flex items-center gap-3 text-blue-600 font-bold"
+                      <div>
 
-                >
+                        <h3 className="font-medium text-black mb-2">
 
-                  <ExternalLink
-                    size={20}
-                  />
+                          Challenges
 
-                  Open Linkedin Post
+                        </h3>
 
-                </a>
+                        <p className="text-gray-600 leading-relaxed">
+
+                          {
+                            update.challenges
+                          }
+
+                        </p>
+
+                      </div>
+
+                    )
+
+                  }
+
+                </div>
 
               </div>
 
@@ -566,6 +625,120 @@ function LinkedinUpdates() {
         }
 
       </div>
+
+      {/* MODAL */}
+
+      {
+
+        showModal && (
+
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-6">
+
+            <div className="bg-white w-full max-w-xl rounded-3xl p-8">
+
+              <h2 className="text-3xl font-semibold text-black mb-8">
+
+                Add Linkedin Update
+
+              </h2>
+
+              <div className="space-y-5">
+
+                <input
+
+                  type="text"
+
+                  placeholder="Linkedin post URL"
+
+                  value={linkedinUrl}
+
+                  onChange={(e) =>
+                    setLinkedinUrl(
+                      e.target.value
+                    )
+                  }
+
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none"
+
+                />
+
+                <input
+
+                  type="text"
+
+                  placeholder="Demo/project link"
+
+                  value={demoLink}
+
+                  onChange={(e) =>
+                    setDemoLink(
+                      e.target.value
+                    )
+                  }
+
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none"
+
+                />
+
+                <textarea
+
+                  placeholder="Challenges faced"
+
+                  value={challenges}
+
+                  onChange={(e) =>
+                    setChallenges(
+                      e.target.value
+                    )
+                  }
+
+                  className="w-full h-32 border border-gray-200 rounded-2xl px-5 py-4 outline-none resize-none"
+
+                />
+
+                <div className="flex gap-4">
+
+                  <button
+
+                    onClick={
+                      submitUpdate
+                    }
+
+                    className="flex-1 bg-black text-white py-4 rounded-2xl font-medium"
+
+                  >
+
+                    Submit
+
+                  </button>
+
+                  <button
+
+                    onClick={() =>
+                      setShowModal(
+                        false
+                      )
+                    }
+
+                    className="flex-1 border border-gray-200 py-4 rounded-2xl font-medium"
+
+                  >
+
+                    Cancel
+
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )
+
+      }
 
     </div>
 
