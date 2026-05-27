@@ -10,7 +10,11 @@ import {
   Search,
   ExternalLink,
   CalendarDays,
-  Plus
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Send,
+  CheckCircle2
 
 } from "lucide-react";
 
@@ -52,6 +56,22 @@ function LinkedinUpdates() {
   const [showModal,
     setShowModal] =
       useState(false);
+
+  const [expandedId,
+    setExpandedId] =
+      useState(null);
+
+  const [comments,
+    setComments] =
+      useState({});
+
+  const [savedCommentId,
+    setSavedCommentId] =
+      useState(null);
+
+  const [filterType,
+    setFilterType] =
+      useState(null);
 
   // FORM
 
@@ -121,9 +141,124 @@ function LinkedinUpdates() {
 
       }
 
-      setUpdates(
-        data || []
-      );
+      // DUMMY DATA
+
+      const dummyLinkedinPosts = [
+
+        {
+          id: 1,
+
+          user_name:
+            "Fathima P Ajvad",
+
+          project_name:
+            "Campus Bites",
+
+          week_number: 1,
+
+          linkedin_url:
+            "https://linkedin.com",
+
+          demo_link:
+            "https://vercel.com",
+
+          challenges:
+            "Responsive issue in analytics dashboard.",
+
+          manager_comment:
+            "Good consistency. Improve visual hierarchy.",
+
+          post_status:
+            "posted"
+        },
+
+        {
+          id: 2,
+
+          user_name:
+            "Gayathri M Nair",
+
+          project_name:
+            "Make it Easy",
+
+          week_number: 1,
+
+          linkedin_url:
+            "https://linkedin.com",
+
+          demo_link:
+            "https://github.com",
+
+          challenges:
+            "Printer API instability.",
+
+          manager_comment:
+            "",
+
+          post_status:
+            "posted"
+        },
+
+        {
+          id: 3,
+
+          user_name:
+            "Yeldo K Varghese",
+
+          project_name:
+            "Codenx",
+
+          week_number: 2,
+
+          linkedin_url:
+            "https://linkedin.com",
+
+          demo_link:
+            "https://figma.com",
+
+          challenges:
+            "Realtime sync issue.",
+
+          manager_comment:
+            "Add screenshots next time.",
+
+          post_status:
+            "posted"
+        },
+
+        {
+          id: 4,
+
+          user_name:
+            "Noel Sabu",
+
+          project_name:
+            "Codenx",
+
+          week_number: 3,
+
+          linkedin_url:
+            "https://linkedin.com",
+
+          demo_link:
+            "",
+
+          challenges:
+            "Performance lag in feeds.",
+
+          manager_comment:
+            "",
+
+          post_status:
+            "draft"
+        }
+
+      ];
+
+      setUpdates([
+        ...(data || []),
+        ...dummyLinkedinPosts
+      ]);
 
       setLoading(false);
 
@@ -162,6 +297,39 @@ function LinkedinUpdates() {
         );
 
       }
+    );
+
+  // MEMBERS
+
+  const allMembers = [
+
+    "Fathima P Ajvad",
+    "Swaliha C A",
+    "Nandana Ramachandran",
+    "Gautham Krishna",
+    "Gayathri M Nair",
+    "Krishnan unni",
+    "Aksa Thomas",
+    "Aadya Ajayan",
+    "Yeldo K Varghese",
+    "Sahala Mariyam P S",
+    "Noel Sabu",
+    "Nimal K G"
+
+  ];
+
+  const submittedUsers =
+    filteredUpdates.map(
+      (item) =>
+        item.user_name
+    );
+
+  const pendingUsers =
+    allMembers.filter(
+      (member) =>
+        !submittedUsers.includes(
+          member
+        )
     );
 
   // SUBMIT
@@ -234,6 +402,82 @@ function LinkedinUpdates() {
 
     };
 
+  // COMMENT SAVE
+
+  const handleCommentSave =
+    async (id) => {
+
+      const text =
+        comments[id];
+
+      if (!text)
+        return;
+
+      const {
+
+        error
+
+      } = await supabase
+
+        .from(
+          "linkedin_updates"
+        )
+
+        .update({
+
+          manager_comment:
+            text
+
+        })
+
+        .eq(
+          "id",
+          id
+        );
+
+      if (error) {
+
+        console.log(error);
+
+        return;
+
+      }
+
+      setUpdates(
+
+        updates.map(
+          (item) =>
+
+            item.id === id
+
+              ? {
+
+                  ...item,
+
+                  manager_comment:
+                    text
+
+                }
+
+              : item
+        )
+
+      );
+
+      setSavedCommentId(
+        id
+      );
+
+      setTimeout(() => {
+
+        setSavedCommentId(
+          null
+        );
+
+      }, 2000);
+
+    };
+
   // EXPORT
 
   const exportExcel =
@@ -259,7 +503,10 @@ function LinkedinUpdates() {
               item.demo_link,
 
             Challenges:
-              item.challenges
+              item.challenges,
+
+            Comment:
+              item.manager_comment || ""
 
           })
         );
@@ -314,7 +561,7 @@ function LinkedinUpdates() {
 
   return (
 
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white p-8">
 
       {/* HEADER */}
 
@@ -350,7 +597,7 @@ function LinkedinUpdates() {
 
           {/* WEEK */}
 
-          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-5 py-4">
+          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-5 py-4 hover:border-black transition-all">
 
             <CalendarDays
               size={20}
@@ -371,7 +618,7 @@ function LinkedinUpdates() {
                 )
               }
 
-              className="outline-none bg-transparent text-[15px]"
+              className="outline-none bg-transparent text-[15px] cursor-pointer"
 
             >
 
@@ -397,7 +644,7 @@ function LinkedinUpdates() {
 
           {/* SEARCH */}
 
-          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-5 py-4">
+          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-5 py-4 hover:border-black transition-all">
 
             <Search
               size={20}
@@ -436,7 +683,7 @@ function LinkedinUpdates() {
                   exportExcel
                 }
 
-                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl text-[15px] font-medium"
+                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl text-[15px] font-medium hover:opacity-90 transition-all"
 
               >
 
@@ -466,7 +713,7 @@ function LinkedinUpdates() {
                   )
                 }
 
-                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl text-[15px] font-medium"
+                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl text-[15px] font-medium hover:opacity-90 transition-all"
 
               >
 
@@ -486,145 +733,418 @@ function LinkedinUpdates() {
 
       </div>
 
-      {/* LIST */}
+      {/* FILTER BUTTONS */}
 
-      <div className="grid gap-5">
+      {
 
-        {
+        isPM && (
 
-          filteredUpdates.map(
-            (update) => (
+          <div className="flex gap-3 mb-6">
 
-              <div
+            <button
 
-                key={update.id}
+              onClick={() =>
+                setFilterType(
+                  "submitted"
+                )
+              }
 
-                className="border border-gray-200 rounded-3xl p-6"
+              className={`
 
-              >
+                px-5 py-3 rounded-2xl transition-all
 
-                <div className="flex items-start justify-between mb-5">
+                ${
+                  filterType === null ||
+                  filterType === "submitted"
 
-                  <div>
+                  ? "bg-black text-white"
 
-                    <h2 className="text-2xl font-semibold text-black">
+                  : "border border-gray-200 hover:border-black"
+                }
 
-                      {
-                        update.user_name
-                      }
+              `}
 
-                    </h2>
+            >
 
-                    <p className="text-gray-500 mt-1">
+              Submitted
 
-                      {
-                        update.project_name
-                      }
+            </button>
 
-                    </p>
+            <button
 
-                  </div>
+              onClick={() =>
+                setFilterType(
+                  "pending"
+                )
+              }
 
-                  <div className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium">
+              className={`
 
-                    Week {
-                      update.week_number
-                    }
+                px-5 py-3 rounded-2xl transition-all
 
-                  </div>
+                ${
+                  filterType === "pending"
 
-                </div>
+                  ? "bg-black text-white"
 
-                <div className="space-y-4">
+                  : "border border-gray-200 hover:border-black"
+                }
 
-                  <a
+              `}
 
-                    href={
-                      update.linkedin_url
-                    }
+            >
 
-                    target="_blank"
+              Not Submitted
 
-                    rel="noreferrer"
+            </button>
 
-                    className="flex items-center gap-3 text-black font-medium"
+          </div>
+
+        )
+
+      }
+
+      {/* SUBMITTED */}
+
+      {
+
+        (
+          filterType === null ||
+
+          filterType === "submitted"
+        ) && (
+
+          <div className="space-y-4">
+
+            {
+
+              filteredUpdates.map(
+                (update) => (
+
+                  <div
+
+                    key={update.id}
+
+                    className="border border-gray-200 rounded-3xl overflow-hidden hover:border-black transition-all"
 
                   >
 
-                    <ExternalLink
-                      size={18}
-                    />
+                    {/* HEADER */}
 
-                    Open Linkedin Post
+                    <button
 
-                  </a>
+                      onClick={() =>
 
-                  {
+                        setExpandedId(
 
-                    update.demo_link && (
+                          expandedId ===
+                          update.id
 
-                      <a
+                            ? null
 
-                        href={
-                          update.demo_link
-                        }
+                            : update.id
 
-                        target="_blank"
+                        )
 
-                        rel="noreferrer"
+                      }
 
-                        className="flex items-center gap-3 text-gray-600"
+                      className="w-full flex items-center justify-between px-7 py-6 hover:bg-gray-50 transition-all"
 
-                      >
-
-                        <Briefcase
-                          size={18}
-                        />
-
-                        Open Demo
-
-                      </a>
-
-                    )
-
-                  }
-
-                  {
-
-                    update.challenges && (
+                    >
 
                       <div>
 
-                        <h3 className="font-medium text-black mb-2">
-
-                          Challenges
-
-                        </h3>
-
-                        <p className="text-gray-600 leading-relaxed">
+                        <h2 className="text-2xl font-semibold text-left text-black">
 
                           {
-                            update.challenges
+                            update.user_name
+                          }
+
+                        </h2>
+
+                        <p className="text-gray-500 mt-1 text-left">
+
+                          {
+                            update.project_name
                           }
 
                         </p>
 
                       </div>
 
-                    )
+                      <div className="flex items-center gap-4">
 
-                  }
+                        <div className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium">
 
-                </div>
+                          Week {
+                            update.week_number
+                          }
 
-              </div>
+                        </div>
 
-            )
-          )
+                        {
 
-        }
+                          expandedId ===
+                          update.id
 
-      </div>
+                            ? <ChevronUp />
+
+                            : <ChevronDown />
+
+                        }
+
+                      </div>
+
+                    </button>
+
+                    {/* CONTENT */}
+
+                    {
+
+                      expandedId ===
+                      update.id && (
+
+                        <div className="px-7 pb-7 border-t border-gray-100">
+
+                          <div className="space-y-6 mt-6">
+
+                            <a
+
+                              href={
+                                update.linkedin_url
+                              }
+
+                              target="_blank"
+
+                              rel="noreferrer"
+
+                              className="flex items-center gap-3 text-black font-medium hover:opacity-70 transition-all"
+
+                            >
+
+                              <ExternalLink
+                                size={18}
+                              />
+
+                              Open Linkedin Post
+
+                            </a>
+
+                            {
+
+                              update.demo_link && (
+
+                                <a
+
+                                  href={
+                                    update.demo_link
+                                  }
+
+                                  target="_blank"
+
+                                  rel="noreferrer"
+
+                                  className="flex items-center gap-3 text-gray-600 hover:text-black transition-all"
+
+                                >
+
+                                  <Briefcase
+                                    size={18}
+                                  />
+
+                                  Open Demo
+
+                                </a>
+
+                              )
+
+                            }
+
+                            {
+
+                              update.challenges && (
+
+                                <div>
+
+                                  <h3 className="font-semibold text-black mb-2">
+
+                                    Challenges
+
+                                  </h3>
+
+                                  <p className="text-gray-600 leading-relaxed">
+
+                                    {
+                                      update.challenges
+                                    }
+
+                                  </p>
+
+                                </div>
+
+                              )
+
+                            }
+
+                            {/* COMMENT */}
+
+                            {
+
+                              isPM && (
+
+                                <div>
+
+                                  <h3 className="font-semibold mb-3">
+
+                                    Manager Comment
+
+                                  </h3>
+
+                                  <div className="flex items-center gap-3">
+
+                                    <textarea
+
+                                      value={
+                                        comments[
+                                          update.id
+                                        ] ??
+
+                                        update.manager_comment ??
+
+                                        ""
+                                      }
+
+                                      onChange={(e) =>
+
+                                        setComments({
+
+                                          ...comments,
+
+                                          [update.id]:
+                                            e.target.value
+
+                                        })
+
+                                      }
+
+                                      placeholder="Write feedback..."
+
+                                      className="flex-1 h-12 border border-gray-200 rounded-2xl px-4 py-3 resize-none outline-none focus:border-black transition-all"
+
+                                    />
+
+                                    <button
+
+                                      onClick={() =>
+                                        handleCommentSave(
+                                          update.id
+                                        )
+                                      }
+
+                                      className="bg-black text-white w-12 h-12 rounded-2xl flex items-center justify-center hover:scale-105 transition-all"
+
+                                    >
+
+                                      {
+
+                                        savedCommentId ===
+                                        update.id
+
+                                          ? (
+
+                                            <CheckCircle2
+                                              size={18}
+                                            />
+
+                                          )
+
+                                          : (
+
+                                            <Send
+                                              size={18}
+                                            />
+
+                                          )
+
+                                      }
+
+                                    </button>
+
+                                  </div>
+
+                                </div>
+
+                              )
+
+                            }
+
+                          </div>
+
+                        </div>
+
+                      )
+
+                    }
+
+                  </div>
+
+                )
+              )
+
+            }
+
+          </div>
+
+        )
+
+      }
+
+      {/* PENDING */}
+
+      {
+
+        filterType ===
+        "pending" && (
+
+          <div className="space-y-4">
+
+            {
+
+              pendingUsers.map(
+                (user, index) => (
+
+                  <div
+
+                    key={index}
+
+                    className="border border-gray-200 rounded-3xl px-7 py-6 hover:border-black transition-all"
+
+                  >
+
+                    <h2 className="text-xl font-medium">
+
+                      {user}
+
+                    </h2>
+
+                    <p className="text-gray-500 mt-1">
+
+                      Linkedin update not submitted
+
+                    </p>
+
+                  </div>
+
+                )
+              )
+
+            }
+
+          </div>
+
+        )
+
+      }
 
       {/* MODAL */}
 
@@ -658,7 +1178,7 @@ function LinkedinUpdates() {
                     )
                   }
 
-                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none"
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none hover:border-black focus:border-black transition-all"
 
                 />
 
@@ -676,7 +1196,7 @@ function LinkedinUpdates() {
                     )
                   }
 
-                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none"
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none hover:border-black focus:border-black transition-all"
 
                 />
 
@@ -692,7 +1212,7 @@ function LinkedinUpdates() {
                     )
                   }
 
-                  className="w-full h-32 border border-gray-200 rounded-2xl px-5 py-4 outline-none resize-none"
+                  className="w-full h-32 border border-gray-200 rounded-2xl px-5 py-4 outline-none resize-none hover:border-black focus:border-black transition-all"
 
                 />
 
@@ -704,7 +1224,7 @@ function LinkedinUpdates() {
                       submitUpdate
                     }
 
-                    className="flex-1 bg-black text-white py-4 rounded-2xl font-medium"
+                    className="flex-1 bg-black text-white py-4 rounded-2xl font-medium hover:opacity-90 transition-all"
 
                   >
 
@@ -720,7 +1240,7 @@ function LinkedinUpdates() {
                       )
                     }
 
-                    className="flex-1 border border-gray-200 py-4 rounded-2xl font-medium"
+                    className="flex-1 border border-gray-200 py-4 rounded-2xl font-medium hover:border-black transition-all"
 
                   >
 
