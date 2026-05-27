@@ -75,11 +75,11 @@ function MainLayout() {
 
   return (
 
-    <div className="min-h-screen bg-white flex">
+    <div className="h-screen bg-white flex overflow-hidden">
 
       {/* SIDEBAR */}
 
-      <div className="w-[260px] border-r border-gray-200 bg-white flex flex-col justify-between p-6">
+      <div className="w-[260px] h-screen fixed left-0 top-0 border-r border-gray-200 bg-white flex flex-col justify-between p-6">
 
         {/* TOP */}
 
@@ -87,7 +87,7 @@ function MainLayout() {
 
           {/* LOGO */}
 
-          <div className="mb-10">
+          <div className="mb-10 mt-3">
 
             <h1 className="text-3xl font-bold text-black">
 
@@ -181,7 +181,7 @@ function MainLayout() {
 
         {/* BOTTOM */}
 
-        <div>
+        <div className="pb-6">
 
           {/* USER */}
 
@@ -213,7 +213,7 @@ function MainLayout() {
               handleLogout
             }
 
-            className="flex items-center gap-3 text-red-500 hover:bg-red-50 px-4 py-3 rounded-xl transition-all w-full"
+            className="flex items-center gap-3 bg-red-50 text-red-500 hover:bg-red-100 px-4 py-3 rounded-xl transition-all w-full border border-red-100"
 
           >
 
@@ -231,7 +231,7 @@ function MainLayout() {
 
       {/* CONTENT */}
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 ml-[260px] h-screen overflow-y-auto">
 
         <div className="p-8">
 
