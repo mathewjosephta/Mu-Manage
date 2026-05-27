@@ -31,8 +31,6 @@ function Login() {
 
         setLoading(true);
 
-        // LOGIN
-
         const {
 
           data: loginData,
@@ -42,10 +40,15 @@ function Login() {
         } = await supabase.auth
           .signInWithPassword({
 
-            email,
-            password
+            email:
+              email.trim(),
+
+            password:
+              password.trim()
 
           });
+
+        // LOGIN ERROR
 
         if (loginError) {
 
@@ -61,21 +64,31 @@ function Login() {
 
         }
 
+        // DEBUG
+
         console.log(
-          "LOGIN SUCCESS"
+          "AUTH EMAIL:"
         );
 
         console.log(
-          loginData
+          loginData.user.email
         );
 
-        // FETCH USER DATA
+        console.log(
+          "INPUT EMAIL:"
+        );
+
+        console.log(
+          email.trim()
+        );
+
+        // FETCH USER
 
         const {
 
-          data: roleData,
+          data: userData,
 
-          error: roleError
+          error: userError
 
         } = await supabase
 
@@ -83,40 +96,43 @@ function Login() {
 
           .select("*")
 
-          .eq("email", email)
+          .eq(
+            "email",
+            loginData.user.email
+          )
 
           .single();
 
         console.log(
-          "ROLE DATA"
+          "USER DATA:"
         );
 
         console.log(
-          roleData
+          userData
         );
 
         console.log(
-          "ROLE ERROR"
+          "USER ERROR:"
         );
 
         console.log(
-          roleError
+          userError
         );
 
         if (
-          roleError ||
-          !roleData
+          userError ||
+          !userData
         ) {
 
           alert(
-            "No user role found"
+            "User data not found"
           );
 
           return;
 
         }
 
-        // SAVE FULL USER
+        // SAVE USER
 
         localStorage.setItem(
 
@@ -125,33 +141,23 @@ function Login() {
           JSON.stringify({
 
             id:
-              roleData.id,
+              userData.id,
 
             name:
-              roleData.name,
+              userData.name,
 
             email:
-              roleData.email,
+              userData.email,
 
             role:
-              roleData.role,
+              userData.role,
 
-            team_name:
-              roleData.team_name
+            project_name:
+              userData.project_name
 
           })
 
         );
-
-        console.log(
-          "ROLE:"
-        );
-
-        console.log(
-          roleData.role
-        );
-
-        // REDIRECT
 
         navigate("/");
 
@@ -189,13 +195,11 @@ function Login() {
 
         <p className="text-gray-500 mb-8">
 
-          Agile Project Platform
+          Login to continue
 
         </p>
 
         <div className="space-y-5">
-
-          {/* EMAIL */}
 
           <input
 
@@ -211,11 +215,9 @@ function Login() {
               )
             }
 
-            className="w-full border border-gray-200 bg-gray-50 rounded-2xl px-4 py-3 outline-none"
+            className="w-full border rounded-2xl px-4 py-3"
 
           />
-
-          {/* PASSWORD */}
 
           <input
 
@@ -231,11 +233,9 @@ function Login() {
               )
             }
 
-            className="w-full border border-gray-200 bg-gray-50 rounded-2xl px-4 py-3 outline-none"
+            className="w-full border rounded-2xl px-4 py-3"
 
           />
-
-          {/* BUTTON */}
 
           <button
 
@@ -245,7 +245,7 @@ function Login() {
 
             disabled={loading}
 
-            className="w-full bg-blue-600 hover:bg-blue-700 transition-all text-white py-3 rounded-2xl font-semibold"
+            className="w-full bg-blue-600 text-white py-3 rounded-2xl"
 
           >
 

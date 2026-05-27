@@ -1,60 +1,25 @@
 import {
   useEffect,
+  useMemo,
   useState
 } from "react";
 
 import {
 
-  Activity,
-  CalendarDays,
-  Download,
-  Search,
-  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Flame,
+  Lock,
   CheckCircle2,
-  Clock3,
-  X
+  XCircle,
+  CalendarDays
 
 } from "lucide-react";
 
 import { supabase }
 from "../services/supabase";
 
-import * as XLSX
-from "xlsx";
-
 function DailyUpdates() {
-
-  const [updates,
-    setUpdates] =
-      useState([]);
-
-  const [users,
-    setUsers] =
-      useState([]);
-
-  const [loading,
-    setLoading] =
-      useState(true);
-
-  const [selectedDate,
-    setSelectedDate] =
-      useState(
-
-        new Date()
-          .toISOString()
-          .split("T")[0]
-
-      );
-
-  const [search,
-    setSearch] =
-      useState("");
-
-  const [showModal,
-    setShowModal] =
-      useState(false);
-
-  // USER
 
   const currentUser =
     JSON.parse(
@@ -63,7 +28,32 @@ function DailyUpdates() {
       )
     );
 
-  // FORM
+  const today =
+    new Date()
+      .toISOString()
+      .split("T")[0];
+
+  const [currentMonth,
+    setCurrentMonth] =
+      useState(
+        new Date()
+      );
+
+  const [updates,
+    setUpdates] =
+      useState([]);
+
+  const [selectedUpdate,
+    setSelectedUpdate] =
+      useState(null);
+
+  const [loading,
+    setLoading] =
+      useState(true);
+
+  const [showModal,
+    setShowModal] =
+      useState(false);
 
   const [completedToday,
     setCompletedToday] =
@@ -81,107 +71,234 @@ function DailyUpdates() {
 
   useEffect(() => {
 
-    fetchData();
-
-    const channel =
-      supabase
-
-        .channel(
-          "daily-updates-live"
-        )
-
-        .on(
-
-          "postgres_changes",
-
-          {
-
-            event: "*",
-
-            schema: "public",
-
-            table:
-              "daily_updates"
-
-          },
-
-          () => {
-
-            fetchData();
-
-          }
-
-        )
-
-        .subscribe();
-
-    return () => {
-
-      supabase.removeChannel(
-        channel
-      );
-
-    };
+    fetchUpdates();
 
   }, []);
 
-  const fetchData =
+  const fetchUpdates =
     async () => {
 
       setLoading(true);
 
+      let query =
+        supabase
+          .from(
+            "daily_updates"
+          )
+          .select("*");
+
+      // PM CAN SEE ALL
+
+      if (
+        currentUser.role !==
+        "pm"
+      ) {
+
+        query =
+          query.eq(
+            "user_email",
+            currentUser.email
+          );
+
+      }
+
       const {
 
-        data: updateData
+        data,
+        error
 
-      } = await supabase
+      } = await query;
 
-        .from(
-          "daily_updates"
-        )
+      if (error) {
 
-        .select("*")
+        console.log(error);
 
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        );
-
-      const {
-
-        data: userData
-
-      } = await supabase
-
-        .from("users")
-
-        .select("*");
+      }
 
       setUpdates(
-        updateData || []
-      );
-
-      setUsers(
-        userData || []
+        data || []
       );
 
       setLoading(false);
 
     };
 
-  // SUBMIT UPDATE
+  // CALENDAR
+
+  const year =
+    currentMonth.getFullYear();
+
+  const month =
+    currentMonth.getMonth();
+
+  const firstDay =
+    new Date(
+      year,
+      month,
+      1
+    ).getDay();
+
+  const totalDays =
+    new Date(
+      year,
+      month + 1,
+      0
+    ).getDate();
+
+  const monthName =
+    currentMonth.toLocaleString(
+      "default",
+      {
+        month: "long"
+      }
+    );
+
+  // STREAK
+
+  const streak =
+    useMemo(() => {
+
+      const userDates =
+        updates
+
+          .filter(
+            (item) =>
+              item.user_email ===
+              currentUser.email
+          )
+
+          .map(
+            (item) =>
+              item.update_date
+          );
+
+      let count = 0;
+
+      let check =
+        new Date();
+
+      while (true) {
+
+        const formatted =
+          check
+            .toISOString()
+            .split("T")[0];
+
+        if (
+          userDates.includes(
+            formatted
+          )
+        ) {
+
+          count++;
+
+          check.setDate(
+            check.getDate() - 1
+          );
+
+        }
+
+        else {
+
+          break;
+
+        }
+
+      }
+
+      return count;
+
+    }, [
+      updates,
+      currentUser.email
+    ]);
+
+  // STATUS
+
+  const getDateStatus =
+    (date) => {
+
+      const hasUpdate =
+        updates.some(
+          (item) =>
+            item.update_date ===
+            date
+        );
+
+      if (hasUpdate) {
+
+        return "submitted";
+
+      }
+
+      if (date === today) {
+
+        return "today";
+
+      }
+
+      if (date > today) {
+
+        return "future";
+
+      }
+
+      return "missed";
+
+    };
+
+  // DAY CLICK
+
+  const handleDayClick =
+    (date) => {
+
+      const update =
+        updates.find(
+          (item) =>
+            item.update_date ===
+            date
+        );
+
+      if (update) {
+
+        setSelectedUpdate(
+          update
+        );
+
+        return;
+
+      }
+
+      if (date === today) {
+
+        setShowModal(true);
+
+      }
+
+    };
+
+  // SUBMIT
 
   const submitUpdate =
     async () => {
 
       if (
-        !completedToday ||
-        !tomorrowGoals
-      ) return;
+        !completedToday
+      ) {
 
-      await supabase
+        alert(
+          "Fill completed today"
+        );
+
+        return;
+
+      }
+
+      const {
+
+        error
+
+      } = await supabase
 
         .from(
           "daily_updates"
@@ -198,8 +315,8 @@ function DailyUpdates() {
           role:
             currentUser.role,
 
-          team_name:
-            currentUser.team_name,
+          project_name:
+            currentUser.project_name,
 
           completed_today:
             completedToday,
@@ -207,168 +324,42 @@ function DailyUpdates() {
           blockers,
 
           tomorrow_goals:
-            tomorrowGoals
+            tomorrowGoals,
+
+          update_date:
+            today
 
         }]);
 
-      resetForm();
+      if (error) {
 
-      fetchData();
+        console.log(error);
 
-    };
+        alert(
+          "Already submitted today"
+        );
 
-  // RESET
+        return;
 
-  const resetForm =
-    () => {
+      }
 
       setCompletedToday("");
-
       setBlockers("");
-
       setTomorrowGoals("");
 
       setShowModal(false);
 
-    };
-
-  // FILTER
-
-  const filteredUpdates =
-    updates.filter(
-      (update) => {
-
-        const date =
-          new Date(
-            update.created_at
-          )
-
-            .toISOString()
-            .split("T")[0];
-
-        const matchesDate =
-          date ===
-          selectedDate;
-
-        const matchesSearch =
-
-          update.user_name
-            ?.toLowerCase()
-
-            .includes(
-              search.toLowerCase()
-            ) ||
-
-          update.team_name
-            ?.toLowerCase()
-
-            .includes(
-              search.toLowerCase()
-            );
-
-        return (
-
-          matchesDate &&
-          matchesSearch
-
-        );
-
-      }
-    );
-
-  // MISSING MEMBERS
-
-  const submittedEmails =
-    filteredUpdates.map(
-      (update) =>
-        update.user_email
-    );
-
-  const missingUsers =
-    users.filter(
-      (user) =>
-
-        !submittedEmails.includes(
-          user.email
-        )
-    );
-
-  // EXPORT
-
-  const exportExcel =
-    () => {
-
-      const exportData =
-        filteredUpdates.map(
-          (update) => ({
-
-            Name:
-              update.user_name,
-
-            Role:
-              update.role,
-
-            Team:
-              update.team_name,
-
-            Completed:
-              update.completed_today,
-
-            Blockers:
-              update.blockers,
-
-            Tomorrow:
-              update.tomorrow_goals,
-
-            Date:
-              new Date(
-                update.created_at
-              ).toLocaleDateString()
-
-          })
-        );
-
-      const worksheet =
-        XLSX.utils.json_to_sheet(
-          exportData
-        );
-
-      const workbook =
-        XLSX.utils.book_new();
-
-      XLSX.utils.book_append_sheet(
-
-        workbook,
-
-        worksheet,
-
-        "Daily Updates"
-
-      );
-
-      XLSX.writeFile(
-
-        workbook,
-
-        `daily-updates-${selectedDate}.xlsx`
-
-      );
+      fetchUpdates();
 
     };
-
-  // LOADING
 
   if (loading) {
 
     return (
 
-      <div className="h-screen bg-[#f7f3ea] flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center">
 
-        <h1 className="text-5xl font-black text-[#1d2b53]">
-
-          Loading Updates...
-
-        </h1>
+        Loading...
 
       </div>
 
@@ -382,7 +373,7 @@ function DailyUpdates() {
 
       {/* HEADER */}
 
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6 mb-8">
+      <div className="flex justify-between items-center mb-8">
 
         <div>
 
@@ -392,614 +383,288 @@ function DailyUpdates() {
 
           </h1>
 
-          <p className="text-[#5c6b8a] mt-3 text-xl">
+          <p className="text-xl text-gray-500 mt-2">
 
-            Team standups & sprint progress tracking
+            {
+              currentUser.project_name
+            }
 
           </p>
 
         </div>
 
-        {/* ACTIONS */}
+        <div className="bg-[#fff5b8] border-[4px] border-[#1d2b53] rounded-[28px] px-8 py-5 flex items-center gap-4">
 
-        <div className="flex flex-wrap gap-4">
+          <Flame
+            size={40}
+            className="text-orange-500"
+          />
 
-          {/* DATE */}
+          <div>
 
-          <div className="flex items-center gap-3 bg-white border-[4px] border-[#1d2b53] rounded-[24px] px-5 py-4 shadow-[4px_4px_0px_#1d2b53]">
+            <h2 className="text-4xl font-black">
 
-            <CalendarDays
-              size={22}
-              className="text-[#5c6b8a]"
-            />
+              {streak}
 
-            <input
+            </h2>
 
-              type="date"
+            <p>
 
-              value={
-                selectedDate
-              }
+              Day Streak
 
-              onChange={(e) =>
-                setSelectedDate(
-                  e.target.value
-                )
-              }
-
-              className="bg-transparent outline-none font-semibold text-[#1d2b53]"
-
-            />
+            </p>
 
           </div>
 
-          {/* SEARCH */}
+        </div>
 
-          <div className="flex items-center gap-3 bg-white border-[4px] border-[#1d2b53] rounded-[24px] px-5 py-4 shadow-[4px_4px_0px_#1d2b53]">
+      </div>
 
-            <Search
-              size={22}
-              className="text-[#5c6b8a]"
-            />
+      {/* CALENDAR */}
 
-            <input
+      <div className="bg-white rounded-[36px] border-[4px] border-[#1d2b53] p-8">
 
-              type="text"
+        {/* MONTH */}
 
-              placeholder="Search..."
-
-              value={search}
-
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
-
-              className="bg-transparent outline-none text-[#1d2b53] font-semibold"
-
-            />
-
-          </div>
-
-          {/* EXPORT */}
-
-          <button
-
-            onClick={
-              exportExcel
-            }
-
-            className="flex items-center gap-3 bg-[#d8f7df] text-[#1d2b53] px-6 py-4 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-black hover:translate-y-[2px] transition-all"
-
-          >
-
-            <Download size={22} />
-
-            Export
-
-          </button>
-
-          {/* ADD */}
+        <div className="flex justify-between items-center mb-8">
 
           <button
 
             onClick={() =>
-              setShowModal(
-                true
+              setCurrentMonth(
+                new Date(
+                  year,
+                  month - 1,
+                  1
+                )
               )
             }
 
-            className="flex items-center gap-3 bg-[#3b82f6] text-white px-6 py-4 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53] font-black hover:translate-y-[2px] transition-all"
+          >
+
+            <ChevronLeft />
+
+          </button>
+
+          <h2 className="text-5xl font-black">
+
+            {monthName} {year}
+
+          </h2>
+
+          <button
+
+            onClick={() =>
+              setCurrentMonth(
+                new Date(
+                  year,
+                  month + 1,
+                  1
+                )
+              )
+            }
 
           >
 
-            <Activity size={22} />
-
-            Add Update
+            <ChevronRight />
 
           </button>
 
         </div>
 
-      </div>
+        {/* DAYS */}
 
-      {/* STATS */}
-
-      <div className="grid md:grid-cols-3 gap-6 mb-8">
-
-        {/* TOTAL */}
-
-        <div className="bg-[#dcecff] border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[5px_5px_0px_#1d2b53]">
-
-          <p className="text-[#5c6b8a] font-bold">
-
-            Submitted Updates
-
-          </p>
-
-          <h2 className="text-6xl font-black text-[#1d2b53] mt-4">
-
-            {
-              filteredUpdates.length
-            }
-
-          </h2>
-
-        </div>
-
-        {/* MISSING */}
-
-        <div className="bg-[#ffe0f0] border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[5px_5px_0px_#1d2b53]">
-
-          <p className="text-[#5c6b8a] font-bold">
-
-            Missing Updates
-
-          </p>
-
-          <h2 className="text-6xl font-black text-[#1d2b53] mt-4">
-
-            {
-              missingUsers.length
-            }
-
-          </h2>
-
-        </div>
-
-        {/* MEMBERS */}
-
-        <div className="bg-[#d8f7df] border-[4px] border-[#1d2b53] rounded-[30px] p-7 shadow-[5px_5px_0px_#1d2b53]">
-
-          <p className="text-[#5c6b8a] font-bold">
-
-            Team Members
-
-          </p>
-
-          <h2 className="text-6xl font-black text-[#1d2b53] mt-4">
-
-            {
-              users.length
-            }
-
-          </h2>
-
-        </div>
-
-      </div>
-
-      {/* CONTENT */}
-
-      <div className="grid xl:grid-cols-[1fr_350px] gap-8">
-
-        {/* UPDATES */}
-
-        <div className="space-y-6">
+        <div className="grid grid-cols-7 gap-4">
 
           {
 
-            filteredUpdates.length === 0 && (
-
-              <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-12 text-center shadow-[6px_6px_0px_#1d2b53]">
-
-                <Clock3
-                  size={50}
-                  className="mx-auto text-[#5c6b8a]"
-                />
-
-                <h2 className="text-4xl font-black text-[#1d2b53] mt-6">
-
-                  No Updates Found
-
-                </h2>
-
-              </div>
-
+            Array.from({
+              length: firstDay
+            }).map(
+              (_, i) => (
+                <div key={i} />
+              )
             )
 
           }
 
           {
 
-            filteredUpdates.map(
-              (update) => (
+            Array.from({
+              length: totalDays
+            }).map(
+              (_, i) => {
 
-                <div
+                const day =
+                  i + 1;
 
-                  key={update.id}
+                const date =
+                  new Date(
+                    year,
+                    month,
+                    day
+                  )
 
-                  className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]"
+                    .toISOString()
+                    .split("T")[0];
 
-                >
+                const status =
+                  getDateStatus(
+                    date
+                  );
 
-                  {/* TOP */}
+                return (
 
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                  <button
 
-                    <div>
+                    key={date}
 
-                      <h2 className="text-3xl font-black text-[#1d2b53]">
+                    onClick={() =>
+                      handleDayClick(
+                        date
+                      )
+                    }
 
-                        {
-                          update.user_name
-                        }
+                    className={`
 
-                      </h2>
+                      aspect-square
+                      rounded-[24px]
+                      border-[4px]
+                      flex
+                      flex-col
+                      items-center
+                      justify-center
 
-                      <div className="flex items-center gap-3 mt-2">
+                      ${
+                        status ===
+                        "submitted"
 
-                        <div className="px-4 py-2 rounded-full bg-[#dcecff] border-[2px] border-[#1d2b53] text-sm font-black capitalize">
+                        ? "bg-green-200"
 
-                          {
-                            update.role
-                          }
+                        : status ===
+                          "today"
 
-                        </div>
+                        ? "bg-blue-200"
 
-                        <div className="px-4 py-2 rounded-full bg-[#fff5b8] border-[2px] border-[#1d2b53] text-sm font-black capitalize">
+                        : status ===
+                          "future"
 
-                          {
-                            update.team_name
-                          }
+                        ? "bg-gray-100"
 
-                        </div>
-
-                      </div>
-
-                    </div>
-
-                    <div className="text-[#5c6b8a] font-bold">
-
-                      {
-
-                        new Date(
-                          update.created_at
-                        ).toLocaleString()
-
+                        : "bg-red-200"
                       }
 
-                    </div>
-
-                  </div>
-
-                  {/* CONTENT */}
-
-                  <div className="space-y-5">
-
-                    {/* COMPLETED */}
-
-                    <div className="bg-[#d8f7df] border-[3px] border-[#1d2b53] rounded-[24px] p-5">
-
-                      <div className="flex items-center gap-3 mb-3">
-
-                        <CheckCircle2
-                          size={22}
-                          className="text-[#22c55e]"
-                        />
-
-                        <h3 className="font-black text-[#1d2b53] text-xl">
-
-                          Completed Today
-
-                        </h3>
-
-                      </div>
-
-                      <p className="text-[#1d2b53] leading-8">
-
-                        {
-                          update.completed_today
-                        }
-
-                      </p>
-
-                    </div>
-
-                    {/* BLOCKERS */}
-
-                    <div className="bg-[#ffe0f0] border-[3px] border-[#1d2b53] rounded-[24px] p-5">
-
-                      <div className="flex items-center gap-3 mb-3">
-
-                        <AlertTriangle
-                          size={22}
-                          className="text-red-500"
-                        />
-
-                        <h3 className="font-black text-[#1d2b53] text-xl">
-
-                          Blockers & Issues
-
-                        </h3>
-
-                      </div>
-
-                      <p className="text-[#1d2b53] leading-8">
-
-                        {
-
-                          update.blockers ||
-
-                          "No blockers"
-
-                        }
-
-                      </p>
-
-                    </div>
-
-                    {/* GOALS */}
-
-                    <div className="bg-[#dcecff] border-[3px] border-[#1d2b53] rounded-[24px] p-5">
-
-                      <div className="flex items-center gap-3 mb-3">
-
-                        <Clock3
-                          size={22}
-                          className="text-[#3b82f6]"
-                        />
-
-                        <h3 className="font-black text-[#1d2b53] text-xl">
-
-                          Tomorrow's Goals
-
-                        </h3>
-
-                      </div>
-
-                      <p className="text-[#1d2b53] leading-8">
-
-                        {
-                          update.tomorrow_goals
-                        }
-
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              )
-            )
-
-          }
-
-        </div>
-
-        {/* MISSING */}
-
-        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53] h-fit sticky top-6">
-
-          <h2 className="text-4xl font-black text-[#1d2b53] mb-6">
-
-            Missing Updates
-
-          </h2>
-
-          <div className="space-y-4">
-
-            {
-
-              missingUsers.length === 0 && (
-
-                <div className="bg-[#d8f7df] border-[3px] border-[#1d2b53] rounded-[22px] p-5">
-
-                  <p className="font-black text-[#1d2b53]">
-
-                    Everyone submitted updates 🎉
-
-                  </p>
-
-                </div>
-
-              )
-
-            }
-
-            {
-
-              missingUsers.map(
-                (user) => (
-
-                  <div
-
-                    key={user.id}
-
-                    className="bg-[#ffe0f0] border-[3px] border-red-500 rounded-[22px] p-5"
+                    `}
 
                   >
 
-                    <h3 className="font-black text-red-600 text-lg">
+                    <h2 className="text-2xl font-black">
 
-                      {
-                        user.name
-                      }
+                      {day}
 
-                    </h3>
+                    </h2>
 
-                    <p className="text-red-500 text-sm mt-1 capitalize">
+                    {
 
-                      {
-                        user.team_name
-                      }
+                      status ===
+                      "submitted"
 
-                    </p>
+                      ? <CheckCircle2 size={18} />
 
-                  </div>
+                      : status ===
+                        "future"
 
-                )
-              )
+                      ? <Lock size={18} />
 
-            }
+                      : status ===
+                        "missed"
 
-          </div>
+                      ? <XCircle size={18} />
+
+                      : <CalendarDays size={18} />
+
+                    }
+
+                  </button>
+
+                );
+
+              }
+            )
+
+          }
 
         </div>
 
       </div>
 
-      {/* MODAL */}
+      {/* VIEW UPDATE */}
 
       {
 
-        showModal && (
+        selectedUpdate && (
 
-          <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="mt-8 bg-white border-[4px] border-[#1d2b53] rounded-[30px] p-8">
 
-            <div className="w-full max-w-2xl bg-[#f7f3ea] border-[5px] border-[#1d2b53] rounded-[38px] overflow-hidden shadow-[10px_10px_0px_#1d2b53]">
+            <h2 className="text-4xl font-black mb-6">
 
-              {/* HEADER */}
+              Update Details
 
-              <div className="bg-[#fff7d6] border-b-[5px] border-[#1d2b53] px-8 py-7 flex items-center justify-between">
+            </h2>
 
-                <div>
+            <div className="space-y-5">
 
-                  <h1 className="text-4xl font-black text-[#1d2b53]">
+              <div>
 
-                    Today's Standup
+                <h3 className="font-black">
 
-                  </h1>
+                  Completed Today
 
-                  <p className="text-[#5c6b8a] mt-2">
+                </h3>
 
-                    Submit daily sprint update
+                <p>
 
-                  </p>
-
-                </div>
-
-                <button
-
-                  onClick={
-                    resetForm
+                  {
+                    selectedUpdate.completed_today
                   }
 
-                  className="w-14 h-14 rounded-2xl bg-white border-[3px] border-[#1d2b53] flex items-center justify-center"
-
-                >
-
-                  <X
-                    size={24}
-                    className="text-[#1d2b53]"
-                  />
-
-                </button>
+                </p>
 
               </div>
 
-              {/* FORM */}
+              <div>
 
-              <div className="p-8 space-y-6">
+                <h3 className="font-black">
 
-                {/* COMPLETED */}
+                  Blockers
 
-                <div>
+                </h3>
 
-                  <label className="block font-black text-[#1d2b53] mb-3">
+                <p>
 
-                    Completed Today
-
-                  </label>
-
-                  <textarea
-
-                    rows={4}
-
-                    value={
-                      completedToday
-                    }
-
-                    onChange={(e) =>
-                      setCompletedToday(
-                        e.target.value
-                      )
-                    }
-
-                    className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 resize-none outline-none"
-
-                  />
-
-                </div>
-
-                {/* BLOCKERS */}
-
-                <div>
-
-                  <label className="block font-black text-[#1d2b53] mb-3">
-
-                    Blockers & Issues
-
-                  </label>
-
-                  <textarea
-
-                    rows={3}
-
-                    value={
-                      blockers
-                    }
-
-                    onChange={(e) =>
-                      setBlockers(
-                        e.target.value
-                      )
-                    }
-
-                    className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 resize-none outline-none"
-
-                  />
-
-                </div>
-
-                {/* GOALS */}
-
-                <div>
-
-                  <label className="block font-black text-[#1d2b53] mb-3">
-
-                    Tomorrow's Goals
-
-                  </label>
-
-                  <textarea
-
-                    rows={4}
-
-                    value={
-                      tomorrowGoals
-                    }
-
-                    onChange={(e) =>
-                      setTomorrowGoals(
-                        e.target.value
-                      )
-                    }
-
-                    className="w-full rounded-[24px] border-[4px] border-[#1d2b53] bg-white px-6 py-5 resize-none outline-none"
-
-                  />
-
-                </div>
-
-                {/* BUTTON */}
-
-                <button
-
-                  onClick={
-                    submitUpdate
+                  {
+                    selectedUpdate.blockers
                   }
 
-                  className="w-full bg-[#3b82f6] text-white py-5 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[5px_5px_0px_#1d2b53] font-black text-2xl"
+                </p>
 
-                >
+              </div>
 
-                  Submit Update
+              <div>
 
-                </button>
+                <h3 className="font-black">
+
+                  Tomorrow Goals
+
+                </h3>
+
+                <p>
+
+                  {
+                    selectedUpdate.tomorrow_goals
+                  }
+
+                </p>
 
               </div>
 

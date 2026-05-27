@@ -5,11 +5,7 @@ import {
 
 import {
 
-  FolderKanban,
-  AlertTriangle,
-  CheckCircle2,
-  Clock3,
-  Activity,
+  CalendarDays,
   Briefcase,
   Users
 
@@ -19,14 +15,6 @@ import { supabase }
 from "../services/supabase";
 
 function Dashboard() {
-
-  const [projects,
-    setProjects] =
-      useState([]);
-
-  const [tasks,
-    setTasks] =
-      useState([]);
 
   const [users,
     setUsers] =
@@ -44,54 +32,20 @@ function Dashboard() {
     setLoading] =
       useState(true);
 
+  // TODAY
+
+  const today =
+    new Date()
+      .toISOString()
+      .split("T")[0];
+
   // FETCH
 
   useEffect(() => {
 
     fetchData();
 
-    const channel =
-      supabase
-
-        .channel(
-          "dashboard-live"
-        )
-
-        .on(
-
-          "postgres_changes",
-
-          {
-
-            event: "*",
-
-            schema: "public",
-
-            table: "tasks"
-
-          },
-
-          () => {
-
-            fetchData();
-
-          }
-
-        )
-
-        .subscribe();
-
-    return () => {
-
-      supabase.removeChannel(
-        channel
-      );
-
-    };
-
   }, []);
-
-  // FETCH DATA
 
   const fetchData =
     async () => {
@@ -99,30 +53,6 @@ function Dashboard() {
       try {
 
         setLoading(true);
-
-        // PROJECTS
-
-        const {
-
-          data: projectData
-
-        } = await supabase
-
-          .from("projects")
-
-          .select("*");
-
-        // TASKS
-
-        const {
-
-          data: taskData
-
-        } = await supabase
-
-          .from("tasks")
-
-          .select("*");
 
         // USERS
 
@@ -144,7 +74,9 @@ function Dashboard() {
 
         } = await supabase
 
-          .from("daily_updates")
+          .from(
+            "daily_updates"
+          )
 
           .select("*");
 
@@ -161,16 +93,6 @@ function Dashboard() {
           )
 
           .select("*");
-
-        // SET STATE
-
-        setProjects(
-          projectData || []
-        );
-
-        setTasks(
-          taskData || []
-        );
 
         setUsers(
           userData || []
@@ -200,73 +122,31 @@ function Dashboard() {
 
     };
 
-  // COUNTS
-
-  const activeTasks =
-    tasks.filter(
-      (task) =>
-        !task.is_deleted
-    );
-
-  const completedTasks =
-    activeTasks.filter(
-      (task) =>
-        task.status ===
-        "done"
-    );
-
-  const reviewTasks =
-    activeTasks.filter(
-      (task) =>
-        task.status ===
-        "under review"
-    );
-
-  const overdueTasks =
-    activeTasks.filter(
-      (task) => {
-
-        if (
-          task.status ===
-          "done"
-        ) return false;
-
-        return (
-
-          new Date(
-            task.due_date
-          ) < new Date()
-
-        );
-
-      }
-    );
-
-  // TODAY UPDATES
-
-  const today =
-    new Date()
-      .toISOString()
-      .split("T")[0];
+  // TODAY SUBMISSIONS
 
   const todayUpdates =
     updates.filter(
-      (update) => {
-
-        const date =
-          new Date(
-            update.created_at
-          )
-
-            .toISOString()
-            .split("T")[0];
-
-        return (
-          date === today
-        );
-
-      }
+      (item) =>
+        item.update_date ===
+        today
     );
+
+  // PERCENTAGE
+
+  const submissionPercentage =
+
+    users.length > 0
+
+      ? Math.round(
+
+          (
+            todayUpdates.length /
+            users.length
+          ) * 100
+
+        )
+
+      : 0;
 
   // LINKEDIN %
 
@@ -285,17 +165,15 @@ function Dashboard() {
 
       : 0;
 
-  // LOADING
-
   if (loading) {
 
     return (
 
-      <div className="h-screen bg-[#f7f3ea] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white">
 
-        <h1 className="text-5xl font-black text-[#1d2b53]">
+        <h1 className="text-2xl font-semibold text-gray-600">
 
-          Loading Dashboard...
+          Loading...
 
         </h1>
 
@@ -307,21 +185,21 @@ function Dashboard() {
 
   return (
 
-    <div className="min-h-screen bg-[#f7f3ea] p-8">
+    <div className="min-h-screen bg-white p-8">
 
       {/* HEADER */}
 
       <div className="mb-10">
 
-        <h1 className="text-6xl font-black text-[#1d2b53]">
+        <h1 className="text-4xl font-bold text-gray-900">
 
-          Project Dashboard
+          Dashboard
 
         </h1>
 
-        <p className="text-[#5c6b8a] mt-3 text-xl">
+        <p className="text-gray-500 mt-2">
 
-          Sprint analytics & project management
+          Team accountability overview
 
         </p>
 
@@ -329,254 +207,136 @@ function Dashboard() {
 
       {/* STATS */}
 
-      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-
-        {/* PROJECTS */}
-
-        <div className="bg-[#dcecff] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
-
-          <div className="flex items-center justify-between mb-6">
-
-            <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center">
-
-              <FolderKanban
-                size={30}
-                className="text-[#1d2b53]"
-              />
-
-            </div>
-
-          </div>
-
-          <p className="text-[#5c6b8a] font-bold">
-
-            Active Projects
-
-          </p>
-
-          <h2 className="text-6xl font-black text-[#1d2b53] mt-3">
-
-            {
-              projects.length
-            }
-
-          </h2>
-
-        </div>
-
-        {/* COMPLETED */}
-
-        <div className="bg-[#d8f7df] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
-
-          <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center mb-6">
-
-            <CheckCircle2
-              size={30}
-              className="text-[#22c55e]"
-            />
-
-          </div>
-
-          <p className="text-[#5c6b8a] font-bold">
-
-            Completed Tasks
-
-          </p>
-
-          <h2 className="text-6xl font-black text-[#1d2b53] mt-3">
-
-            {
-              completedTasks.length
-            }
-
-          </h2>
-
-        </div>
-
-        {/* REVIEW */}
-
-        <div className="bg-[#fff5b8] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
-
-          <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center mb-6">
-
-            <Clock3
-              size={30}
-              className="text-[#f59e0b]"
-            />
-
-          </div>
-
-          <p className="text-[#5c6b8a] font-bold">
-
-            Under Review
-
-          </p>
-
-          <h2 className="text-6xl font-black text-[#1d2b53] mt-3">
-
-            {
-              reviewTasks.length
-            }
-
-          </h2>
-
-        </div>
-
-        {/* OVERDUE */}
-
-        <div className="bg-[#ffe0f0] border-[4px] border-[#1d2b53] rounded-[32px] p-7 shadow-[6px_6px_0px_#1d2b53]">
-
-          <div className="w-16 h-16 rounded-[24px] bg-white border-[3px] border-[#1d2b53] flex items-center justify-center mb-6">
-
-            <AlertTriangle
-              size={30}
-              className="text-red-500"
-            />
-
-          </div>
-
-          <p className="text-[#5c6b8a] font-bold">
-
-            Overdue Tasks
-
-          </p>
-
-          <h2 className="text-6xl font-black text-[#1d2b53] mt-3">
-
-            {
-              overdueTasks.length
-            }
-
-          </h2>
-
-        </div>
-
-      </div>
-
-      {/* SECOND ROW */}
-
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-7">
+      <div className="grid md:grid-cols-3 gap-6">
 
         {/* DAILY */}
 
-        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6">
 
-          <div className="flex items-center gap-4 mb-6">
-
-            <div className="w-16 h-16 rounded-[24px] bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center">
-
-              <Activity
-                size={28}
-                className="text-[#1d2b53]"
-              />
-
-            </div>
+          <div className="flex items-center justify-between mb-6">
 
             <div>
 
-              <h2 className="text-3xl font-black text-[#1d2b53]">
+              <p className="text-gray-500 text-sm">
 
                 Daily Updates
 
+              </p>
+
+              <h2 className="text-4xl font-bold text-gray-900 mt-2">
+
+                {
+                  todayUpdates.length
+                }
+
               </h2>
 
-              <p className="text-[#5c6b8a]">
+            </div>
 
-                Submitted today
+            <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center">
 
-              </p>
+              <CalendarDays
+                size={26}
+                className="text-gray-700"
+              />
 
             </div>
 
           </div>
 
-          <h1 className="text-7xl font-black text-[#1d2b53]">
+          <p className="text-sm text-gray-500">
 
             {
-              todayUpdates.length
-            }
+              submissionPercentage
+            }% submitted today
 
-          </h1>
+          </p>
 
         </div>
 
         {/* LINKEDIN */}
 
-        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6">
 
-          <div className="flex items-center gap-4 mb-6">
-
-            <div className="w-16 h-16 rounded-[24px] bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center">
-
-              <Briefcase
-                size={28}
-                className="text-[#2563eb]"
-              />
-
-            </div>
+          <div className="flex items-center justify-between mb-6">
 
             <div>
 
-              <h2 className="text-3xl font-black text-[#1d2b53]">
+              <p className="text-gray-500 text-sm">
 
-                Linkedin Progress
+                Linkedin Updates
+
+              </p>
+
+              <h2 className="text-4xl font-bold text-gray-900 mt-2">
+
+                {
+                  linkedinPercentage
+                }%
 
               </h2>
 
-              <p className="text-[#5c6b8a]">
+            </div>
 
-                Weekly submissions
+            <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center">
 
-              </p>
+              <Briefcase
+                size={26}
+                className="text-gray-700"
+              />
 
             </div>
 
           </div>
 
-          <h1 className="text-7xl font-black text-[#1d2b53]">
+          <p className="text-sm text-gray-500">
 
-            {
-              linkedinPercentage
-            }%
+            Weekly submission rate
 
-          </h1>
+          </p>
 
         </div>
 
         {/* USERS */}
 
-        <div className="bg-white border-[4px] border-[#1d2b53] rounded-[34px] p-7 shadow-[6px_6px_0px_#1d2b53]">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6">
 
-          <div className="flex items-center gap-4 mb-6">
-
-            <div className="w-16 h-16 rounded-[24px] bg-[#dcecff] border-[3px] border-[#1d2b53] flex items-center justify-center">
-
-              <Users
-                size={28}
-                className="text-[#1d2b53]"
-              />
-
-            </div>
+          <div className="flex items-center justify-between mb-6">
 
             <div>
 
-              <h2 className="text-3xl font-black text-[#1d2b53]">
+              <p className="text-gray-500 text-sm">
 
                 Team Members
+
+              </p>
+
+              <h2 className="text-4xl font-bold text-gray-900 mt-2">
+
+                {
+                  users.length
+                }
 
               </h2>
 
             </div>
 
+            <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center">
+
+              <Users
+                size={26}
+                className="text-gray-700"
+              />
+
+            </div>
+
           </div>
 
-          <h1 className="text-7xl font-black text-[#1d2b53]">
+          <p className="text-sm text-gray-500">
 
-            {
-              users.length
-            }
+            Active users
 
-          </h1>
+          </p>
 
         </div>
 

@@ -5,19 +5,11 @@ import {
 } from "react-router-dom";
 
 import {
-  useEffect,
-  useState
-} from "react";
-
-import {
 
   LayoutDashboard,
-  FolderKanban,
-  CheckSquare,
+  CalendarDays,
   Briefcase,
-  MessageCircle,
-  LogOut,
-  CalendarDays
+  LogOut
 
 } from "lucide-react";
 
@@ -37,19 +29,7 @@ function MainLayout() {
       localStorage.getItem(
         "user"
       )
-    ) || {
-
-      name: "Guest",
-      role: "pm"
-
-    };
-
-  const role =
-    currentUser.role;
-
-  const [unreadCount,
-    setUnreadCount] =
-      useState(0);
+    );
 
   // LOGOUT
 
@@ -67,62 +47,26 @@ function MainLayout() {
 
     };
 
-  // FETCH UNREAD
-
-  const fetchUnreadMessages =
-    async () => {
-
-      const {
-
-        data: messages
-
-      } = await supabase
-
-        .from(
-          "team_messages"
-        )
-
-        .select("*");
-
-      if (!messages)
-        return;
-
-      setUnreadCount(
-
-        messages.length
-
-      );
-
-    };
-
-  useEffect(() => {
-
-    fetchUnreadMessages();
-
-  }, []);
-
-  // ACTIVE NAV STYLE
+  // NAV STYLE
 
   const navClass =
     (path) => {
 
       return `
 
-        flex items-center gap-4
-        w-full
-        px-5 py-4
-        rounded-[22px]
-        border-[3px]
+        flex items-center gap-3
+        px-4 py-3
+        rounded-xl
         transition-all
-        font-black
+        text-sm
+        font-medium
 
         ${
-          location.pathname ===
-          path
+          location.pathname === path
 
-          ? "bg-[#3b82f6] text-white border-[#1d2b53] shadow-[4px_4px_0px_#1d2b53]"
+          ? "bg-black text-white"
 
-          : "bg-white text-[#1d2b53] border-[#1d2b53] hover:bg-[#f3f4f6]"
+          : "text-gray-600 hover:bg-gray-100"
         }
 
       `;
@@ -131,11 +75,13 @@ function MainLayout() {
 
   return (
 
-    <div className="h-screen flex bg-[#f7f3ea] overflow-hidden">
+    <div className="min-h-screen bg-white flex">
 
       {/* SIDEBAR */}
 
-      <div className="w-[290px] bg-white border-r-[4px] border-[#1d2b53] flex flex-col justify-between p-6 shrink-0">
+      <div className="w-[260px] border-r border-gray-200 bg-white flex flex-col justify-between p-6">
+
+        {/* TOP */}
 
         <div>
 
@@ -143,27 +89,23 @@ function MainLayout() {
 
           <div className="mb-10">
 
-            <div className="bg-[#dcecff] border-[4px] border-[#1d2b53] rounded-[28px] p-6 shadow-[5px_5px_0px_#1d2b53]">
+            <h1 className="text-3xl font-bold text-black">
 
-              <h1 className="text-4xl font-black text-[#1d2b53]">
+              μManage
 
-                μManage
+            </h1>
 
-              </h1>
+            <p className="text-gray-500 mt-1 text-sm">
 
-              <p className="text-[#5c6b8a] mt-2">
+              Team Accountability
 
-                Sprint Workspace
-
-              </p>
-
-            </div>
+            </p>
 
           </div>
 
           {/* NAVIGATION */}
 
-          <div className="space-y-4">
+          <div className="space-y-2">
 
             {/* DASHBOARD */}
 
@@ -173,73 +115,15 @@ function MainLayout() {
                 navigate("/")
               }
 
-              className={navClass(
-                "/"
-              )}
+              className={navClass("/")}
 
             >
 
               <LayoutDashboard
-                size={24}
+                size={18}
               />
 
               Dashboard
-
-            </button>
-
-            {/* PROJECTS */}
-
-            {
-
-              role === "pm" && (
-
-                <button
-
-                  onClick={() =>
-                    navigate(
-                      "/projects"
-                    )
-                  }
-
-                  className={navClass(
-                    "/projects"
-                  )}
-
-                >
-
-                  <FolderKanban
-                    size={24}
-                  />
-
-                  Projects
-
-                </button>
-
-              )
-
-            }
-
-            {/* TASKS */}
-
-            <button
-
-              onClick={() =>
-                navigate(
-                  "/tasks"
-                )
-              }
-
-              className={navClass(
-                "/tasks"
-              )}
-
-            >
-
-              <CheckSquare
-                size={24}
-              />
-
-              Tasks
 
             </button>
 
@@ -260,7 +144,7 @@ function MainLayout() {
             >
 
               <CalendarDays
-                size={24}
+                size={18}
               />
 
               Daily Updates
@@ -284,58 +168,10 @@ function MainLayout() {
             >
 
               <Briefcase
-                size={24}
+                size={18}
               />
 
               Linkedin Updates
-
-            </button>
-
-            {/* TEAM CHAT */}
-
-            <button
-
-              onClick={() =>
-                navigate(
-                  "/team-chat"
-                )
-              }
-
-              className={navClass(
-                "/team-chat"
-              )}
-
-            >
-
-              <div className="flex items-center justify-between w-full">
-
-                <div className="flex items-center gap-4">
-
-                  <MessageCircle
-                    size={24}
-                  />
-
-                  Team Chat
-
-                </div>
-
-                {
-
-                  unreadCount > 0 && (
-
-                    <div className="min-w-[28px] h-[28px] rounded-full bg-red-500 text-white text-sm flex items-center justify-center font-bold">
-
-                      {
-                        unreadCount
-                      }
-
-                    </div>
-
-                  )
-
-                }
-
-              </div>
 
             </button>
 
@@ -343,27 +179,27 @@ function MainLayout() {
 
         </div>
 
-        {/* USER */}
+        {/* BOTTOM */}
 
-        <div className="space-y-5">
+        <div>
 
-          <div className="bg-[#fff7d6] border-[4px] border-[#1d2b53] rounded-[28px] p-5 shadow-[4px_4px_0px_#1d2b53]">
+          {/* USER */}
 
-            <h2 className="text-xl font-black text-[#1d2b53]">
+          <div className="mb-4">
+
+            <h2 className="font-semibold text-black">
 
               {
-
-                currentUser.name ||
-
-                "Guest"
-
+                currentUser?.name
               }
 
             </h2>
 
-            <p className="text-[#5c6b8a] mt-2 capitalize">
+            <p className="text-sm text-gray-500 capitalize">
 
-              {role}
+              {
+                currentUser?.role
+              }
 
             </p>
 
@@ -377,12 +213,12 @@ function MainLayout() {
               handleLogout
             }
 
-            className="flex items-center justify-center gap-3 w-full bg-red-500 hover:bg-red-600 transition-all text-white py-5 rounded-[24px] border-[4px] border-[#1d2b53] shadow-[5px_5px_0px_#1d2b53] font-black"
+            className="flex items-center gap-3 text-red-500 hover:bg-red-50 px-4 py-3 rounded-xl transition-all w-full"
 
           >
 
             <LogOut
-              size={22}
+              size={18}
             />
 
             Logout
@@ -393,7 +229,7 @@ function MainLayout() {
 
       </div>
 
-      {/* PAGE CONTENT */}
+      {/* CONTENT */}
 
       <div className="flex-1 overflow-y-auto">
 
