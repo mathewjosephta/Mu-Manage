@@ -60,6 +60,7 @@ function MainLayout() {
         transition-all
         text-sm
         font-medium
+        w-full
 
         ${
           location.pathname === path
@@ -109,23 +110,32 @@ function MainLayout() {
 
             {/* DASHBOARD */}
 
-            <button
+            {
 
-              onClick={() =>
-                navigate("/")
-              }
+              currentUser?.role ===
+              "pm" && (
 
-              className={navClass("/")}
+                <button
 
-            >
+                  onClick={() =>
+                    navigate("/")
+                  }
 
-              <LayoutDashboard
-                size={18}
-              />
+                  className={navClass("/")}
 
-              Dashboard
+                >
 
-            </button>
+                  <LayoutDashboard
+                    size={18}
+                  />
+
+                  Dashboard
+
+                </button>
+
+              )
+
+            }
 
             {/* DAILY */}
 

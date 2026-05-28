@@ -1,342 +1,251 @@
 import {
-  useEffect,
-  useState
-} from "react";
+  Outlet,
+  useLocation,
+  useNavigate
+} from "react-router-dom";
 
 import {
 
+  LayoutDashboard,
   CalendarDays,
   Briefcase,
-  Users
+  LogOut
 
 } from "lucide-react";
 
 import { supabase }
 from "../services/supabase";
 
-function Dashboard() {
+function MainLayout() {
 
-  const [users,
-    setUsers] =
-      useState([]);
+  const navigate =
+    useNavigate();
 
-  const [updates,
-    setUpdates] =
-      useState([]);
+  const location =
+    useLocation();
 
-  const [linkedinUpdates,
-    setLinkedinUpdates] =
-      useState([]);
+  const currentUser =
+    JSON.parse(
+      localStorage.getItem(
+        "user"
+      )
+    );
 
-  const [loading,
-    setLoading] =
-      useState(true);
+  // LOGOUT
 
-  // TODAY
-
-  const today =
-    new Date()
-      .toISOString()
-      .split("T")[0];
-
-  // FETCH
-
-  useEffect(() => {
-
-    fetchData();
-
-  }, []);
-
-  const fetchData =
+  const handleLogout =
     async () => {
 
-      try {
+      await supabase.auth
+        .signOut();
 
-        setLoading(true);
+      localStorage.removeItem(
+        "user"
+      );
 
-        // USERS
-
-        const {
-
-          data: userData
-
-        } = await supabase
-
-          .from("users")
-
-          .select("*");
-
-        // DAILY UPDATES
-
-        const {
-
-          data: updateData
-
-        } = await supabase
-
-          .from(
-            "daily_updates"
-          )
-
-          .select("*");
-
-        // LINKEDIN
-
-        const {
-
-          data: linkedinData
-
-        } = await supabase
-
-          .from(
-            "linkedin_updates"
-          )
-
-          .select("*");
-
-        setUsers(
-          userData || []
-        );
-
-        setUpdates(
-          updateData || []
-        );
-
-        setLinkedinUpdates(
-          linkedinData || []
-        );
-
-      }
-
-      catch (err) {
-
-        console.log(err);
-
-      }
-
-      finally {
-
-        setLoading(false);
-
-      }
+      navigate("/login");
 
     };
 
-  // TODAY SUBMISSIONS
+  // NAV STYLE
 
-  const todayUpdates =
-    updates.filter(
-      (item) =>
-        item.update_date ===
-        today
-    );
+  const navClass =
+    (path) => {
 
-  // PERCENTAGE
+      return `
 
-  const submissionPercentage =
+        flex items-center gap-3
+        px-4 py-3
+        rounded-xl
+        transition-all
+        text-sm
+        font-medium
+        w-full
 
-    users.length > 0
+        ${
+          location.pathname === path
 
-      ? Math.round(
+          ? "bg-black text-white"
 
-          (
-            todayUpdates.length /
-            users.length
-          ) * 100
+          : "text-gray-600 hover:bg-gray-100"
+        }
 
-        )
+      `;
 
-      : 0;
-
-  // LINKEDIN %
-
-  const linkedinPercentage =
-
-    users.length > 0
-
-      ? Math.round(
-
-          (
-            linkedinUpdates.length /
-            users.length
-          ) * 100
-
-        )
-
-      : 0;
-
-  if (loading) {
-
-    return (
-
-      <div className="min-h-screen flex items-center justify-center bg-white">
-
-        <h1 className="text-2xl font-semibold text-gray-600">
-
-          Loading...
-
-        </h1>
-
-      </div>
-
-    );
-
-  }
+    };
 
   return (
 
-    <div className="min-h-screen bg-white p-8">
+    <div className="h-screen bg-white flex overflow-hidden">
 
-      {/* HEADER */}
+      {/* SIDEBAR */}
 
-      <div className="mb-10">
+      <div className="w-[260px] h-screen fixed left-0 top-0 border-r border-gray-200 bg-white flex flex-col justify-between p-6">
 
-        <h1 className="text-4xl font-bold text-gray-900">
+        {/* TOP */}
 
-          Dashboard
+        <div>
 
-        </h1>
+          {/* LOGO */}
 
-        <p className="text-gray-500 mt-2">
+          <div className="mb-10 mt-3">
 
-          Team accountability overview
+            <h1 className="text-3xl font-bold text-black">
 
-        </p>
+              μManage
+
+            </h1>
+
+            <p className="text-gray-500 mt-1 text-sm">
+
+              Team Accountability
+
+            </p>
+
+          </div>
+
+          {/* NAVIGATION */}
+
+          <div className="space-y-2">
+
+            {/* DASHBOARD */}
+
+            {
+
+              currentUser?.role ===
+              "pm" && (
+
+                <button
+
+                  onClick={() =>
+                    navigate("/")
+                  }
+
+                  className={navClass("/")}
+
+                >
+
+                  <LayoutDashboard
+                    size={18}
+                  />
+
+                  Dashboard
+
+                </button>
+
+              )
+
+            }
+
+            {/* DAILY */}
+
+            <button
+
+              onClick={() =>
+                navigate(
+                  "/daily-updates"
+                )
+              }
+
+              className={navClass(
+                "/daily-updates"
+              )}
+
+            >
+
+              <CalendarDays
+                size={18}
+              />
+
+              Daily Updates
+
+            </button>
+
+            {/* LINKEDIN */}
+
+            <button
+
+              onClick={() =>
+                navigate(
+                  "/linkedin-updates"
+                )
+              }
+
+              className={navClass(
+                "/linkedin-updates"
+              )}
+
+            >
+
+              <Briefcase
+                size={18}
+              />
+
+              Linkedin Updates
+
+            </button>
+
+          </div>
+
+        </div>
+
+        {/* BOTTOM */}
+
+        <div className="pb-6">
+
+          {/* USER */}
+
+          <div className="mb-4">
+
+            <h2 className="font-semibold text-black">
+
+              {
+                currentUser?.name
+              }
+
+            </h2>
+
+            <p className="text-sm text-gray-500 capitalize">
+
+              {
+                currentUser?.role
+              }
+
+            </p>
+
+          </div>
+
+          {/* LOGOUT */}
+
+          <button
+
+            onClick={
+              handleLogout
+            }
+
+            className="flex items-center gap-3 bg-red-50 text-red-500 hover:bg-red-100 px-4 py-3 rounded-xl transition-all w-full border border-red-100"
+
+          >
+
+            <LogOut
+              size={18}
+            />
+
+            Logout
+
+          </button>
+
+        </div>
 
       </div>
 
-      {/* STATS */}
+      {/* CONTENT */}
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="flex-1 ml-[260px] h-screen overflow-y-auto">
 
-        {/* DAILY */}
+        <div className="p-8">
 
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
-
-          <div className="flex items-center justify-between mb-6">
-
-            <div>
-
-              <p className="text-gray-500 text-sm">
-
-                Daily Updates
-
-              </p>
-
-              <h2 className="text-4xl font-bold text-gray-900 mt-2">
-
-                {
-                  todayUpdates.length
-                }
-
-              </h2>
-
-            </div>
-
-            <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center">
-
-              <CalendarDays
-                size={26}
-                className="text-gray-700"
-              />
-
-            </div>
-
-          </div>
-
-          <p className="text-sm text-gray-500">
-
-            {
-              submissionPercentage
-            }% submitted today
-
-          </p>
-
-        </div>
-
-        {/* LINKEDIN */}
-
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
-
-          <div className="flex items-center justify-between mb-6">
-
-            <div>
-
-              <p className="text-gray-500 text-sm">
-
-                Linkedin Updates
-
-              </p>
-
-              <h2 className="text-4xl font-bold text-gray-900 mt-2">
-
-                {
-                  linkedinPercentage
-                }%
-
-              </h2>
-
-            </div>
-
-            <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center">
-
-              <Briefcase
-                size={26}
-                className="text-gray-700"
-              />
-
-            </div>
-
-          </div>
-
-          <p className="text-sm text-gray-500">
-
-            Weekly submission rate
-
-          </p>
-
-        </div>
-
-        {/* USERS */}
-
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
-
-          <div className="flex items-center justify-between mb-6">
-
-            <div>
-
-              <p className="text-gray-500 text-sm">
-
-                Team Members
-
-              </p>
-
-              <h2 className="text-4xl font-bold text-gray-900 mt-2">
-
-                {
-                  users.length
-                }
-
-              </h2>
-
-            </div>
-
-            <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center">
-
-              <Users
-                size={26}
-                className="text-gray-700"
-              />
-
-            </div>
-
-          </div>
-
-          <p className="text-sm text-gray-500">
-
-            Active users
-
-          </p>
+          <Outlet />
 
         </div>
 
@@ -348,4 +257,4 @@ function Dashboard() {
 
 }
 
-export default Dashboard;
+export default MainLayout;

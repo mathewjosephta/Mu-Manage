@@ -5,25 +5,24 @@ import {
   Navigate
 } from "react-router-dom";
 
-import {
-  useEffect,
-  useState
-} from "react";
-
-import MainLayout from "./layouts/MainLayout";
+import MainLayout
+from "./layouts/MainLayout";
 
 // PAGES
 
-import Dashboard from "./pages/Dashboard";
-import Projects from "./pages/Projects";
-import Tasks from "./pages/Tasks";
-import DailyUpdates from "./pages/DailyUpdates";
-import LinkedinUpdates from "./pages/LinkedinUpdates";
-import TeamChat from "./pages/TeamChat";
+import Dashboard
+from "./pages/Dashboard";
+
+import DailyUpdates
+from "./pages/DailyUpdates";
+
+import LinkedinUpdates
+from "./pages/LinkedinUpdates";
 
 // AUTH
 
-import Login from "./pages/Login";
+import Login
+from "./pages/Login";
 
 // STYLES
 
@@ -31,51 +30,36 @@ import "./App.css";
 
 function App() {
 
-  const [user,
-    setUser] =
-      useState(null);
+  // USER
 
-  // LOAD USER
-
-  useEffect(() => {
-
-    const storedUser =
-      JSON.parse(
-
-        localStorage.getItem(
-          "user"
-        )
-
-      );
-
-    setUser(
-      storedUser
-    );
-
-  }, []);
+  const user =
+    JSON.parse(
+      localStorage.getItem(
+        "user"
+      )
+    ) || null;
 
   // PROTECTED ROUTE
 
-  const ProtectedRoute = ({
-    children
-  }) => {
+  const ProtectedRoute =
+    ({ children }) => {
 
-    if (!user) {
+      if (!user) {
 
-      return (
+        return (
 
-        <Navigate
-          to="/login"
-          replace
-        />
+          <Navigate
+            to="/login"
+            replace
+          />
 
-      );
+        );
 
-    }
+      }
 
-    return children;
+      return children;
 
-  };
+    };
 
   return (
 
@@ -89,7 +73,9 @@ function App() {
 
           path="/login"
 
-          element={<Login />}
+          element={
+            <Login />
+          }
 
         />
 
@@ -111,43 +97,36 @@ function App() {
 
         >
 
-          {/* DASHBOARD */}
+          {/* ROLE BASED HOME */}
 
           <Route
 
             index
 
             element={
-              <Dashboard />
+
+              user?.role === "pm"
+
+                ? (
+
+                  <Dashboard />
+
+                )
+
+                : (
+
+                  <Navigate
+                    to="/daily-updates"
+                    replace
+                  />
+
+                )
+
             }
 
           />
 
-          {/* PROJECTS */}
-
-          <Route
-
-            path="projects"
-
-            element={
-              <Projects />
-            }
-
-          />
-
-          {/* TASKS */}
-
-          <Route
-
-            path="tasks"
-
-            element={
-              <Tasks />
-            }
-
-          />
-
-          {/* DAILY */}
+          {/* DAILY UPDATES */}
 
           <Route
 
@@ -159,7 +138,7 @@ function App() {
 
           />
 
-          {/* LINKEDIN */}
+          {/* LINKEDIN UPDATES */}
 
           <Route
 
@@ -167,18 +146,6 @@ function App() {
 
             element={
               <LinkedinUpdates />
-            }
-
-          />
-
-          {/* CHAT */}
-
-          <Route
-
-            path="team-chat"
-
-            element={
-              <TeamChat />
             }
 
           />
