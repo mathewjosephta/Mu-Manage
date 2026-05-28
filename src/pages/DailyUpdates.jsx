@@ -412,8 +412,6 @@ function DailyUpdates() {
 
       fetchUpdates();
 
-      // SUCCESS
-
       setShowSuccess(
         true
       );
@@ -503,8 +501,6 @@ function DailyUpdates() {
       setSavedCommentId(
         id
       );
-
-      // SMALL SUCCESS FEEL
 
       setTimeout(() => {
 
@@ -719,410 +715,464 @@ function DailyUpdates() {
 
         isPM && (
 
-          <>
+          <div className="space-y-4">
+
+            <div className="flex gap-3">
+
+              <input
+
+                type="date"
+
+                value={selectedDate}
+
+                onChange={(e) =>
+                  setSelectedDate(
+                    e.target.value
+                  )
+                }
+
+                className="border border-gray-200 rounded-2xl px-5 py-3"
+
+              />
+
+              <button
+
+                onClick={() =>
+                  setFilterType(
+                    "updated"
+                  )
+                }
+
+                className={`
+
+                  px-5 py-3 rounded-2xl transition-all
+
+                  ${
+                    filterType === "updated"
+
+                    ? "bg-black text-white"
+
+                    : "border border-gray-200"
+                  }
+
+                `}
+
+              >
+
+                Updated
+
+              </button>
+
+              <button
+
+                onClick={() =>
+                  setFilterType(
+                    "pending"
+                  )
+                }
+
+                className={`
+
+                  px-5 py-3 rounded-2xl transition-all
+
+                  ${
+                    filterType === "pending"
+
+                    ? "bg-black text-white"
+
+                    : "border border-gray-200"
+                  }
+
+                `}
+
+              >
+
+                Not Updated
+
+              </button>
+
+            </div>
+
+          </div>
+
+        )
+
+      }
+
+      {/* MEMBER CALENDAR */}
+
+      {
+
+        !isPM && (
+
+          <div className="bg-white border border-gray-200 rounded-3xl p-6">
+
+            {/* MONTH */}
+
             <div className="flex items-center justify-between mb-6">
 
-              <div className="flex gap-3">
+              <button
 
-                <input
+                onClick={() =>
+                  setCurrentMonth(
+                    new Date(
+                      year,
+                      month - 1,
+                      1
+                    )
+                  )
+                }
 
-                  type="date"
+                className="w-11 h-11 rounded-xl border border-gray-200 flex items-center justify-center hover:border-black hover:bg-gray-50 transition-all"
 
-                  value={selectedDate}
+              >
+
+                <ChevronLeft size={18} />
+
+              </button>
+
+              <h2 className="text-2xl font-semibold text-black">
+
+                {monthName} {year}
+
+              </h2>
+
+              <button
+
+                onClick={() =>
+                  setCurrentMonth(
+                    new Date(
+                      year,
+                      month + 1,
+                      1
+                    )
+                  )
+                }
+
+                className="w-11 h-11 rounded-xl border border-gray-200 flex items-center justify-center hover:border-black hover:bg-gray-50 transition-all"
+
+              >
+
+                <ChevronRight size={18} />
+
+              </button>
+
+            </div>
+
+            {/* DAYS */}
+
+            <div className="grid grid-cols-7 gap-3">
+
+              {
+
+                Array.from({
+                  length: firstDay
+                }).map(
+                  (_, i) => (
+                    <div key={i} />
+                  )
+                )
+
+              }
+
+              {
+
+                Array.from({
+                  length: totalDays
+                }).map(
+                  (_, i) => {
+
+                    const day =
+                      i + 1;
+
+                    const date =
+                      new Date(
+                        year,
+                        month,
+                        day
+                      )
+
+                        .toISOString()
+                        .split("T")[0];
+
+                    const existingUpdate =
+                      updates.find(
+                        (item) =>
+                          item.update_date ===
+                          date
+                      );
+
+                    const isFuture =
+                      date > today;
+
+                    const isToday =
+                      date === today;
+
+                    const isPast =
+                      date < today;
+
+                    return (
+
+                      <button
+
+                        key={date}
+
+                        onClick={() => {
+
+                          if (isFuture)
+                            return;
+
+                          if (isToday) {
+
+                            if (
+                              existingUpdate
+                            ) {
+
+                              setCompletedToday(
+                                existingUpdate.completed_today || ""
+                              );
+
+                              setBlockers(
+                                existingUpdate.blockers || ""
+                              );
+
+                              setTomorrowGoals(
+                                existingUpdate.tomorrow_goals || ""
+                              );
+
+                            }
+
+                            else {
+
+                              setCompletedToday("");
+                              setBlockers("");
+                              setTomorrowGoals("");
+
+                            }
+
+                            setSelectedDate(
+                              date
+                            );
+
+                            setShowModal(
+                              true
+                            );
+
+                          }
+
+                          else if (
+                            isPast &&
+                            existingUpdate
+                          ) {
+
+                            setCompletedToday(
+                              existingUpdate.completed_today || ""
+                            );
+
+                            setBlockers(
+                              existingUpdate.blockers || ""
+                            );
+
+                            setTomorrowGoals(
+                              existingUpdate.tomorrow_goals || ""
+                            );
+
+                            setSelectedDate(
+                              date
+                            );
+
+                            setShowModal(
+                              true
+                            );
+
+                          }
+
+                        }}
+
+                        className={`
+
+                          h-[78px]
+                          rounded-2xl
+                          border
+                          flex
+                          items-center
+                          justify-center
+                          text-lg
+                          font-semibold
+                          transition-all
+
+                          ${
+                            isFuture
+
+                            ? "bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed"
+
+                            : existingUpdate
+
+                            ? "bg-green-100 border-green-200 text-green-700 hover:scale-[1.03]"
+
+                            : isPast
+
+                            ? "bg-red-100 border-red-200 text-red-600"
+
+                            : "bg-blue-50 border-blue-200 text-blue-700 hover:scale-[1.03]"
+                          }
+
+                        `}
+
+                      >
+
+                        {day}
+
+                      </button>
+
+                    );
+
+                  }
+                )
+
+              }
+
+            </div>
+
+          </div>
+
+        )
+
+      }
+
+      {/* MODAL */}
+
+      {
+
+        showModal && (
+
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-6">
+
+            <div className="bg-white w-full max-w-2xl rounded-3xl p-8 relative">
+
+              <button
+
+                onClick={() =>
+                  setShowModal(
+                    false
+                  )
+                }
+
+                className="absolute top-6 right-6 w-10 h-10 rounded-xl hover:bg-gray-100 flex items-center justify-center"
+
+              >
+
+                <X size={18} />
+
+              </button>
+
+              <h2 className="text-3xl font-semibold mb-2">
+
+                Daily Update
+
+              </h2>
+
+              <p className="text-gray-500 mb-8">
+
+                {selectedDate}
+
+              </p>
+
+              <div className="space-y-5">
+
+                <textarea
+
+                  value={
+                    completedToday
+                  }
 
                   onChange={(e) =>
-                    setSelectedDate(
+                    setCompletedToday(
                       e.target.value
                     )
                   }
 
-                  className="border border-gray-200 rounded-2xl px-5 py-3"
+                  placeholder="Completed today"
+
+                  disabled={
+                    selectedDate < today
+                  }
+
+                  className="w-full h-32 border border-gray-200 rounded-2xl px-5 py-4 resize-none outline-none"
 
                 />
 
-                <button
+                <textarea
 
-                  onClick={() =>
-                    setFilterType(
-                      "updated"
+                  value={
+                    blockers
+                  }
+
+                  onChange={(e) =>
+                    setBlockers(
+                      e.target.value
                     )
                   }
 
-                  className={`
+                  placeholder="Blockers"
 
-                    px-5 py-3 rounded-2xl transition-all
+                  disabled={
+                    selectedDate < today
+                  }
 
-                    ${
-                      filterType === "updated"
+                  className="w-full h-28 border border-gray-200 rounded-2xl px-5 py-4 resize-none outline-none"
 
-                      ? "bg-black text-white"
+                />
 
-                      : "border border-gray-200"
-                    }
+                <textarea
 
-                  `}
+                  value={
+                    tomorrowGoals
+                  }
 
-                >
-
-                  Updated
-
-                </button>
-
-                <button
-
-                  onClick={() =>
-                    setFilterType(
-                      "pending"
+                  onChange={(e) =>
+                    setTomorrowGoals(
+                      e.target.value
                     )
                   }
 
-                  className={`
+                  placeholder="Tomorrow goals"
 
-                    px-5 py-3 rounded-2xl transition-all
+                  disabled={
+                    selectedDate < today
+                  }
 
-                    ${
-                      filterType === "pending"
+                  className="w-full h-28 border border-gray-200 rounded-2xl px-5 py-4 resize-none outline-none"
 
-                      ? "bg-black text-white"
+                />
 
-                      : "border border-gray-200"
-                    }
+                {
 
-                  `}
+                  selectedDate === today && (
 
-                >
+                    <button
 
-                  Not Updated
+                      onClick={
+                        submitUpdate
+                      }
 
-                </button>
+                      className="w-full bg-black text-white py-4 rounded-2xl font-medium hover:opacity-90 transition-all"
+
+                    >
+
+                      Save Update
+
+                    </button>
+
+                  )
+
+                }
 
               </div>
+
             </div>
 
-            {/* UPDATED */}
-
-            {
-
-              filterType ===
-              "updated" && (
-
-                <div className="space-y-4">
-
-                  {
-
-                    selectedDateUpdates.map(
-                      (update) => (
-
-                        <div
-
-                          key={update.id}
-
-                          className="border border-gray-200 rounded-3xl overflow-hidden"
-
-                        >
-
-                          <button
-
-                            onClick={() =>
-
-                              setExpandedId(
-
-                                expandedId ===
-                                update.id
-
-                                  ? null
-
-                                  : update.id
-
-                              )
-
-                            }
-
-                            className="w-full flex items-center justify-between px-7 py-6 hover:bg-gray-50 transition-all"
-
-                          >
-
-                            <div>
-
-                              <h2 className="text-2xl font-semibold text-left">
-
-                                {
-                                  update.user_name
-                                }
-
-                              </h2>
-
-                              <p className="text-gray-500 mt-1 text-left">
-
-                                {
-                                  update.project_name
-                                }
-
-                              </p>
-
-                            </div>
-
-                            {
-
-                              expandedId ===
-                              update.id
-
-                                ? <ChevronUp />
-
-                                : <ChevronDown />
-
-                            }
-
-                          </button>
-
-                          {
-
-                            expandedId ===
-                            update.id && (
-
-                              <div className="px-7 pb-7 border-t border-gray-100">
-
-                                <div className="space-y-6 mt-6">
-
-                                  <div>
-
-                                    <h3 className="font-semibold mb-2">
-
-                                      Completed Today
-
-                                    </h3>
-
-                                    <p className="text-gray-600">
-
-                                      {
-                                        update.completed_today
-                                      }
-
-                                    </p>
-
-                                  </div>
-
-                                  <div>
-
-                                    <h3 className="font-semibold mb-2">
-
-                                      Blockers
-
-                                    </h3>
-
-                                    <p className="text-gray-600">
-
-                                      {
-                                        update.blockers
-                                      }
-
-                                    </p>
-
-                                  </div>
-
-                                  <div>
-
-                                    <h3 className="font-semibold mb-2">
-
-                                      Tomorrow Goals
-
-                                    </h3>
-
-                                    <p className="text-gray-600">
-
-                                      {
-                                        update.tomorrow_goals
-                                      }
-
-                                    </p>
-
-                                  </div>
-
-                                  {/* COMMENT */}
-
-                                  <div>
-
-                                    <h3 className="font-semibold mb-3">
-
-                                      Manager Comment
-
-                                    </h3>
-
-                                    <div className="flex items-center gap-3">
-
-                                      <textarea
-
-                                        value={
-                                          comments[
-                                            update.id
-                                          ] ??
-
-                                          update.manager_comment ??
-
-                                          ""
-                                        }
-
-                                        onChange={(e) =>
-
-                                          setComments({
-
-                                            ...comments,
-
-                                            [update.id]:
-                                              e.target.value
-
-                                          })
-
-                                        }
-
-                                        placeholder="Write feedback..."
-
-                                        className="flex-1 h-12 border border-gray-200 rounded-2xl px-4 py-3 resize-none outline-none"
-
-                                      />
-
-                                      <button
-
-                                        onClick={() =>
-                                          handleCommentSave(
-                                            update.id
-                                          )
-                                        }
-
-                                        className={`
-
-                                          w-12 h-12
-                                          rounded-2xl
-                                          flex items-center justify-center
-                                          transition-all duration-300
-                                          hover:scale-105 active:scale-95
-
-                                          ${
-                                            savedCommentId ===
-                                            update.id
-
-                                            ? "bg-green-500 text-white"
-
-                                            : "bg-black text-white hover:bg-gray-800"
-                                          }
-
-                                        `}
-
-                                      >
-
-                                        {
-
-                                          savedCommentId ===
-                                          update.id
-
-                                            ? (
-
-                                              <CheckCircle2
-                                                size={18}
-                                              />
-
-                                            )
-
-                                            : (
-
-                                              <Send
-                                                size={18}
-                                              />
-
-                                            )
-
-                                        }
-
-                                      </button>
-
-                                    </div>
-
-                                    {
-
-                                      savedCommentId ===
-                                      update.id && (
-
-                                        <p className="text-green-600 text-sm mt-3 font-medium animate-pulse">
-
-                                          Comment sent successfully
-
-                                        </p>
-
-                                      )
-
-                                    }
-
-                                  </div>
-
-                                </div>
-
-                              </div>
-
-                            )
-
-                          }
-
-                        </div>
-
-                      )
-                    )
-
-                  }
-
-                </div>
-
-              )
-
-            }
-
-            {/* PENDING */}
-
-            {
-
-              filterType ===
-              "pending" && (
-
-                <div className="space-y-4">
-
-                  {
-
-                    pendingUsers.map(
-                      (user, index) => (
-
-                        <div
-
-                          key={index}
-
-                          className="border border-gray-200 rounded-3xl px-7 py-6"
-
-                        >
-
-                          <h2 className="text-xl font-medium">
-
-                            {user}
-
-                          </h2>
-
-                          <p className="text-gray-500 mt-1">
-
-                            Daily update not submitted
-
-                          </p>
-
-                        </div>
-
-                      )
-                    )
-
-                  }
-
-                </div>
-
-              )
-
-            }
-
-          </>
+          </div>
 
         )
 
