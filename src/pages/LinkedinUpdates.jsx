@@ -1,213 +1,151 @@
-import {
-  useEffect,
-  useState
-} from "react";
+import { useEffect, useState } from "react";
 
 import {
-
-  Download,
   Search,
-  ExternalLink,
+  Download,
   Plus,
-  ChevronDown,
-  ChevronUp,
+  Lock,
   Sparkles,
   X,
-  Lock
-
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
-import { supabase }
-from "../services/supabase";
+import { supabase } from "../services/supabase";
 
-import * as XLSX
-from "xlsx";
+import * as XLSX from "xlsx";
 
 function LinkedinUpdates() {
 
-  const currentUser =
-    JSON.parse(
-      localStorage.getItem(
-        "user"
-      )
-    );
+  const currentUser = JSON.parse(
+    localStorage.getItem("user")
+  );
 
   const isPM =
-    currentUser?.role ===
-    "pm";
+    currentUser?.role === "pm";
 
   // CURRENT WEEK
 
-  const getCurrentWeek =
-    () => {
+  const getCurrentWeek = () => {
 
-      const now =
-        new Date();
+    const now = new Date();
 
-      const start =
-        new Date(
-          now.getFullYear(),
-          0,
-          1
-        );
+    const start = new Date(
+      now.getFullYear(),
+      0,
+      1
+    );
 
-      const days =
-        Math.floor(
+    const days = Math.floor(
+      (now - start) /
+      (1000 * 60 * 60 * 24)
+    );
 
-          (
-            now - start
-          ) /
+    return Math.ceil(
+      (days + start.getDay() + 1) / 7
+    );
 
-          (
-            24 * 60 * 60 * 1000
-          )
-        );
-
-      return Math.ceil(
-        (
-          days +
-          start.getDay() +
-          1
-        ) / 7
-      );
-
-    };
-
-  // LIMIT TO 4 WEEKS
-
-  const actualWeek =
-    getCurrentWeek();
+  };
 
   const currentWeek =
-    actualWeek > 4
-      ? 4
-      : actualWeek;
+    Math.min(
+      getCurrentWeek(),
+      4
+    );
 
   // TIMER
 
-  const getWeekCountdown =
-    () => {
+  const getWeekCountdown = () => {
 
-      const now =
-        new Date();
+    const now = new Date();
 
-      const endOfWeek =
-        new Date(now);
+    const end = new Date(now);
 
-      endOfWeek.setDate(
-        now.getDate() +
-        (
-          7 - now.getDay()
-        )
-      );
+    end.setDate(
+      now.getDate() +
+      (7 - now.getDay())
+    );
 
-      endOfWeek.setHours(
-        23,
-        59,
-        59,
-        999
-      );
+    end.setHours(
+      23,
+      59,
+      59,
+      999
+    );
 
-      const diff =
-        endOfWeek - now;
+    const diff = end - now;
 
-      const days =
-        Math.floor(
-          diff /
-          (
-            1000 * 60 * 60 * 24
-          )
-        );
+    const days = Math.floor(
+      diff /
+      (1000 * 60 * 60 * 24)
+    );
 
-      const hours =
-        Math.floor(
+    const hours = Math.floor(
+      (
+        diff %
+        (1000 * 60 * 60 * 24)
+      ) /
+      (1000 * 60 * 60)
+    );
 
-          (
-            diff %
+    const minutes = Math.floor(
+      (
+        diff %
+        (1000 * 60 * 60)
+      ) /
+      (1000 * 60)
+    );
 
-            (
-              1000 * 60 * 60 * 24
-            )
-          ) /
+    return `${days}d ${hours}h ${minutes}m`;
 
-          (
-            1000 * 60 * 60
-          )
-        );
-
-      const minutes =
-        Math.floor(
-
-          (
-            diff %
-
-            (
-              1000 * 60 * 60
-            )
-          ) /
-
-          (
-            1000 * 60
-          )
-        );
-
-      return `${days}d ${hours}h ${minutes}m`;
-
-    };
+  };
 
   // STATES
 
-  const [updates,
-    setUpdates] =
-      useState([]);
+  const [updates, setUpdates] =
+    useState([]);
 
-  const [loading,
-    setLoading] =
-      useState(true);
+  const [allMembers, setAllMembers] =
+    useState([]);
 
-  const [search,
-    setSearch] =
-      useState("");
+  const [selectedWeek, setSelectedWeek] =
+    useState(currentWeek);
 
-  const [selectedWeek,
-    setSelectedWeek] =
-      useState(
-        currentWeek
-      );
+  const [loading, setLoading] =
+    useState(true);
 
-  const [showModal,
-    setShowModal] =
-      useState(false);
+  const [search, setSearch] =
+    useState("");
 
-  const [expandedId,
-    setExpandedId] =
-      useState(null);
+  const [filterType, setFilterType] =
+    useState("updated");
 
-  const [showSuccess,
-    setShowSuccess] =
-      useState(false);
+  const [showModal, setShowModal] =
+    useState(false);
 
-  const [countdown,
-    setCountdown] =
-      useState(
-        getWeekCountdown()
-      );
+  const [expandedId, setExpandedId] =
+    useState(null);
+
+  const [showSuccess, setShowSuccess] =
+    useState(false);
+
+  const [countdown, setCountdown] =
+    useState(
+      getWeekCountdown()
+    );
 
   // FORM
 
-  const [linkedinUrl,
-    setLinkedinUrl] =
-      useState("");
+  const [linkedinUrl, setLinkedinUrl] =
+    useState("");
 
-  const [demoLink,
-    setDemoLink] =
-      useState("");
+  const [demoLink, setDemoLink] =
+    useState("");
 
-  const [challenges,
-    setChallenges] =
-      useState("");
+  const [challenges, setChallenges] =
+    useState("");
 
-  // LIVE TIMER
+  // TIMER
 
   useEffect(() => {
 
@@ -221,371 +159,311 @@ function LinkedinUpdates() {
       }, 60000);
 
     return () =>
-      clearInterval(
-        interval
-      );
+      clearInterval(interval);
 
   }, []);
 
-  // FETCH
+  // FETCH MEMBERS
+
+  const fetchMembers = async () => {
+
+    const { data, error } =
+      await supabase
+        .from("users")
+        .select("*");
+
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    setAllMembers(data || []);
+
+  };
+
+  // FETCH UPDATES
+
+  const fetchUpdates = async () => {
+
+    setLoading(true);
+
+    let query =
+      supabase
+        .from("linkedin_updates")
+        .select("*")
+        .order(
+          "created_at",
+          { ascending: false }
+        );
+
+    if (!isPM) {
+
+      query =
+        query.eq(
+          "user_email",
+          currentUser.email
+        );
+
+    }
+
+    const { data, error } =
+      await query;
+
+    if (error) {
+      console.log(error);
+    }
+
+    setUpdates(data || []);
+
+    setLoading(false);
+
+  };
 
   useEffect(() => {
 
     fetchUpdates();
+    fetchMembers();
 
   }, []);
 
-  const fetchUpdates =
-    async () => {
-
-      setLoading(true);
-
-      let query =
-        supabase
-
-          .from(
-            "linkedin_updates"
-          )
-
-          .select("*")
-
-          .order(
-            "created_at",
-            {
-              ascending: false
-            }
-          );
-
-      if (!isPM) {
-
-        query =
-          query.eq(
-            "user_email",
-            currentUser.email
-          );
-
-      }
-
-      const {
-
-        data,
-        error
-
-      } = await query;
-
-      if (error) {
-
-        console.log(error);
-
-      }
-
-      // DUMMY DATA
-
-      const dummyLinkedinPosts = [
-
-        {
-          id: 101,
-
-          user_email:
-            "mathew@mumange.com",
-
-          user_name:
-            "Mathew Joseph",
-
-          role:
-            "member",
-
-          project_name:
-            "μManage",
-
-          week_number: 1,
-
-          linkedin_url:
-            "https://linkedin.com",
-
-          demo_link:
-            "https://mu-manage.vercel.app",
-
-          challenges:
-            "Implemented role based routing and fixed Supabase authentication flow."
-        },
-
-        {
-          id: 102,
-
-          user_email:
-            "gayathri@mumange.com",
-
-          user_name:
-            "Gayathri M Nair",
-
-          role:
-            "member",
-
-          project_name:
-            "Make it Easy",
-
-          week_number: 2,
-
-          linkedin_url:
-            "https://linkedin.com",
-
-          demo_link:
-            "https://github.com",
-
-          challenges:
-            "Responsive issue in mobile layouts."
-        },
-
-        {
-          id: 103,
-
-          user_email:
-            "yeldo@mumange.com",
-
-          user_name:
-            "Yeldo K Varghese",
-
-          role:
-            "member",
-
-          project_name:
-            "Codenx",
-
-          week_number: 3,
-
-          linkedin_url:
-            "https://linkedin.com",
-
-          demo_link:
-            "https://figma.com",
-
-          challenges:
-            "Realtime synchronization issues."
-        }
-
-      ];
-
-      setUpdates([
-        ...(data || []),
-        ...dummyLinkedinPosts
-      ]);
-
-      setLoading(false);
-
-    };
-
-  // FILTER
+  // FILTERED
 
   const filteredUpdates =
-    updates.filter(
-      (update) => {
+    updates.filter((item) => {
 
-        const matchesWeek =
+      const weekMatch =
+        Number(item.week_number) ===
+        Number(selectedWeek);
 
-          update.week_number ===
-          selectedWeek;
+      const searchMatch =
 
-        const matchesSearch =
+        item.user_name
+          ?.toLowerCase()
+          .includes(
+            search.toLowerCase()
+          ) ||
 
-          update.user_name
+        item.project_name
+          ?.toLowerCase()
+          .includes(
+            search.toLowerCase()
+          );
+
+      return (
+        weekMatch &&
+        searchMatch
+      );
+
+    });
+
+  // UPDATED USERS
+
+  const updatedUsers =
+    filteredUpdates.map(
+      (item) =>
+
+        item.user_name
+          ?.trim()
+          ?.toLowerCase()
+    );
+
+  // PENDING USERS
+
+  const pendingUsers =
+    allMembers.filter(
+      (member) =>
+
+        !updatedUsers.includes(
+          member.full_name
+            ?.trim()
             ?.toLowerCase()
-
-            .includes(
-              search.toLowerCase()
-            ) ||
-
-          update.project_name
-            ?.toLowerCase()
-
-            .includes(
-              search.toLowerCase()
-            );
-
-        return (
-          matchesWeek &&
-          matchesSearch
-        );
-
-      }
+        )
     );
 
   // SUBMIT
 
-  const submitUpdate =
-    async () => {
+  const submitUpdate = async () => {
 
-      // ONLY CURRENT WEEK
+    if (
+      selectedWeek !== currentWeek
+    ) {
 
-      if (
-        selectedWeek !==
-        currentWeek
-      ) {
-
-        alert(
-          "You can only submit progress for current week"
-        );
-
-        return;
-
-      }
-
-      if (!linkedinUrl) {
-
-        alert(
-          "Add Linkedin URL"
-        );
-
-        return;
-
-      }
-
-      const {
-
-        error
-
-      } = await supabase
-
-        .from(
-          "linkedin_updates"
-        )
-
-        .insert([{
-
-          user_email:
-            currentUser.email,
-
-          user_name:
-            currentUser.name,
-
-          role:
-            currentUser.role,
-
-          project_name:
-            currentUser.project_name,
-
-          week_number:
-            selectedWeek,
-
-          linkedin_url:
-            linkedinUrl,
-
-          demo_link:
-            demoLink,
-
-          challenges
-
-        }]);
-
-      if (error) {
-
-        console.log(error);
-
-        return;
-
-      }
-
-      setLinkedinUrl("");
-      setDemoLink("");
-      setChallenges("");
-
-      setShowModal(false);
-
-      fetchUpdates();
-
-      setShowSuccess(
-        true
+      alert(
+        "Only current week submission allowed"
       );
 
-      setTimeout(() => {
+      return;
 
-        setShowSuccess(
-          false
-        );
+    }
 
-      }, 2200);
+    const existing =
+      updates.find(
+        (item) =>
 
-    };
+          item.user_email ===
+          currentUser.email &&
+
+          Number(item.week_number) ===
+          Number(selectedWeek)
+      );
+
+    // UPDATE
+
+    if (existing) {
+
+      const { error } =
+        await supabase
+
+          .from("linkedin_updates")
+
+          .update({
+
+            linkedin_url:
+              linkedinUrl,
+
+            demo_link:
+              demoLink,
+
+            challenges
+
+          })
+
+          .eq(
+            "id",
+            existing.id
+          );
+
+      if (error) {
+        console.log(error);
+        return;
+      }
+
+    }
+
+    // CREATE
+
+    else {
+
+      const { error } =
+        await supabase
+
+          .from("linkedin_updates")
+
+          .insert([{
+
+            user_email:
+              currentUser.email,
+
+            user_name:
+              currentUser.name,
+
+            role:
+              currentUser.role,
+
+            project_name:
+              currentUser.project_name,
+
+            week_number:
+              selectedWeek,
+
+            linkedin_url:
+              linkedinUrl,
+
+            demo_link:
+              demoLink,
+
+            challenges
+
+          }]);
+
+      if (error) {
+        console.log(error);
+        return;
+      }
+
+    }
+
+    setShowModal(false);
+
+    setLinkedinUrl("");
+    setDemoLink("");
+    setChallenges("");
+
+    fetchUpdates();
+
+    setShowSuccess(true);
+
+    setTimeout(() => {
+
+      setShowSuccess(false);
+
+    }, 2000);
+
+  };
 
   // EXPORT
 
-  const exportExcel =
-    () => {
+  const exportExcel = () => {
 
-      const exportData =
-        filteredUpdates.map(
-          (item) => ({
+    const exportData =
+      filteredUpdates.map(
+        (item) => ({
 
-            Name:
-              item.user_name,
+          Name:
+            item.user_name,
 
-            Project:
-              item.project_name,
+          Project:
+            item.project_name,
 
-            Week:
-              item.week_number,
+          Week:
+            item.week_number,
 
-            Linkedin:
-              item.linkedin_url,
+          Linkedin:
+            item.linkedin_url,
 
-            Demo:
-              item.demo_link,
+          Demo:
+            item.demo_link,
 
-            Challenges:
-              item.challenges
+          Challenges:
+            item.challenges
 
-          })
-        );
-
-      const worksheet =
-        XLSX.utils.json_to_sheet(
-          exportData
-        );
-
-      const workbook =
-        XLSX.utils.book_new();
-
-      XLSX.utils.book_append_sheet(
-
-        workbook,
-
-        worksheet,
-
-        "Linkedin Updates"
-
+        })
       );
 
-      XLSX.writeFile(
-
-        workbook,
-
-        `linkedin-week-${selectedWeek}.xlsx`
-
+    const worksheet =
+      XLSX.utils.json_to_sheet(
+        exportData
       );
 
-    };
+    const workbook =
+      XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "Linkedin Updates"
+    );
+
+    XLSX.writeFile(
+      workbook,
+      `week-${selectedWeek}.xlsx`
+    );
+
+  };
 
   if (loading) {
 
     return (
-
-      <div className="min-h-screen bg-white flex items-center justify-center">
-
-        <p className="text-lg text-gray-500">
-
-          Loading...
-
-        </p>
-
+      <div className="p-10">
+        Loading...
       </div>
-
     );
 
   }
 
   return (
 
-    <div className="min-h-screen bg-white p-8">
+    <div className="p-8 min-h-screen bg-white">
 
       {/* SUCCESS */}
 
@@ -593,29 +471,11 @@ function LinkedinUpdates() {
 
         showSuccess && (
 
-          <div className="fixed top-8 right-8 z-50">
+          <div className="fixed top-8 right-8 bg-black text-white px-6 py-5 rounded-3xl shadow-2xl z-50 flex items-center gap-3">
 
-            <div className="bg-black text-white px-6 py-5 rounded-3xl shadow-2xl flex items-center gap-4">
+            <Sparkles size={20} />
 
-              <Sparkles size={22} />
-
-              <div>
-
-                <h2 className="font-semibold text-lg">
-
-                  Update Submitted
-
-                </h2>
-
-                <p className="text-sm text-gray-300">
-
-                  Weekly Linkedin update saved
-
-                </p>
-
-              </div>
-
-            </div>
+            Update Submitted
 
           </div>
 
@@ -625,114 +485,73 @@ function LinkedinUpdates() {
 
       {/* HEADER */}
 
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-10">
 
         <div>
 
-          <h1 className="text-4xl font-bold text-black">
+          <h1 className="text-4xl font-bold">
 
-            {
-
-              isPM
-
-                ? "Team Linkedin Updates"
-
-                : "Linkedin Updates"
-
-            }
+            Linkedin Updates
 
           </h1>
 
-          <p className="text-gray-500 mt-2 text-lg">
+          <p className="text-gray-500 mt-2">
 
-            Weekly progress tracking
+            Weekly team progress
 
           </p>
 
         </div>
 
-        <div className="flex flex-wrap gap-4">
+        <div className="flex gap-3 flex-wrap">
 
-          {/* SEARCH */}
+          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-4 py-3">
 
-          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-5 py-4">
-
-            <Search
-              size={20}
-              className="text-gray-500"
-            />
+            <Search size={18} />
 
             <input
-
               type="text"
-
               placeholder="Search"
-
               value={search}
-
               onChange={(e) =>
                 setSearch(
                   e.target.value
                 )
               }
-
-              className="outline-none text-[15px]"
-
+              className="outline-none"
             />
 
           </div>
-
-          {/* EXPORT */}
 
           {
 
             isPM && (
 
               <button
-
-                onClick={
-                  exportExcel
-                }
-
-                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl"
-
+                onClick={exportExcel}
+                className="bg-black text-white px-5 py-3 rounded-2xl"
               >
-
-                <Download
-                  size={18}
-                />
-
-                Export
-
+                <Download size={18} />
               </button>
 
             )
 
           }
 
-          {/* SUBMIT BUTTON */}
-
           {
 
             !isPM && (
 
               <button
-
                 onClick={() =>
-                  setShowModal(
-                    true
-                  )
+                  setShowModal(true)
                 }
-
-                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl"
-
+                className="bg-black text-white px-5 py-3 rounded-2xl flex items-center gap-2"
               >
 
-                <Plus
-                  size={18}
-                />
+                <Plus size={18} />
 
-                Submit Progress
+                Submit
 
               </button>
 
@@ -744,391 +563,265 @@ function LinkedinUpdates() {
 
       </div>
 
-      {/* WEEK SELECTOR */}
+      {/* WEEK */}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
 
         {
 
-          [1, 2, 3, 4].map(
-            (week) => {
+          [1,2,3,4].map((week) => {
 
-              const isCurrent =
-                week ===
-                currentWeek;
+            const current =
+              week === currentWeek;
 
-              return (
+            return (
 
-                <button
+              <button
 
-                  key={week}
+                key={week}
 
-                  onClick={() => {
+                onClick={() =>
+                  setSelectedWeek(week)
+                }
 
-                    // VIEW ANY WEEK
+                className={`
 
-                    setSelectedWeek(
-                      week
-                    );
+                  h-[100px]
+                  rounded-3xl
+                  border
+                  transition-all
 
-                  }}
+                  ${
+                    selectedWeek === week
 
-                  className={`
+                    ? "bg-black text-white border-black"
 
-                    h-[100px]
-                    rounded-3xl
-                    border
-                    transition-all
-                    font-semibold
-                    text-lg
-                    cursor-pointer
+                    : "border-gray-200"
+                  }
 
-                    ${
-                      selectedWeek ===
-                      week
+                `}
 
-                      ? "bg-black text-white border-black"
+              >
 
-                      : "bg-white border-gray-200 hover:border-black hover:scale-[1.02]"
-                    }
+                <div className="flex flex-col items-center justify-center">
 
-                  `}
+                  <span className="font-semibold">
 
+                    Week {week}
+
+                  </span>
+
+                  {
+
+                    current ? (
+
+                      <p className="text-xs mt-2 opacity-80">
+
+                        Ends in {countdown}
+
+                      </p>
+
+                    ) : (
+
+                      <div className="flex items-center gap-1 text-xs mt-2 opacity-60">
+
+                        <Lock size={12} />
+
+                        View Only
+
+                      </div>
+
+                    )
+
+                  }
+
+                </div>
+
+              </button>
+
+            );
+
+          })
+
+        }
+
+      </div>
+
+      {/* FILTERS */}
+
+      {
+
+        isPM && (
+
+          <div className="flex gap-3 mb-8">
+
+            <button
+
+              onClick={() =>
+                setFilterType("updated")
+              }
+
+              className={`
+
+                px-5 py-3 rounded-2xl
+
+                ${
+                  filterType === "updated"
+
+                  ? "bg-black text-white"
+
+                  : "border border-gray-200"
+                }
+
+              `}
+
+            >
+
+              Updated
+
+            </button>
+
+            <button
+
+              onClick={() =>
+                setFilterType("pending")
+              }
+
+              className={`
+
+                px-5 py-3 rounded-2xl
+
+                ${
+                  filterType === "pending"
+
+                  ? "bg-black text-white"
+
+                  : "border border-gray-200"
+                }
+
+              `}
+
+            >
+
+              Not Updated
+
+            </button>
+
+          </div>
+
+        )
+
+      }
+
+      {/* UPDATED */}
+
+      {
+
+        filterType === "updated" && (
+
+          <div className="space-y-4">
+
+            {
+
+              filteredUpdates.map((update) => (
+
+                <div
+                  key={update.id}
+                  className="border border-gray-200 rounded-3xl overflow-hidden"
                 >
 
-                  <div className="flex flex-col items-center justify-center">
+                  <button
 
-                    <span>
+                    onClick={() =>
 
-                      Week {week}
+                      setExpandedId(
 
-                    </span>
-
-                    {
-
-                      isCurrent ? (
-
-                        <p className="text-xs mt-2 opacity-80">
-
-                          Ends in {countdown}
-
-                        </p>
-
-                      ) : (
-
-                        <div className="flex items-center gap-1 mt-2 text-xs opacity-60">
-
-                          <Lock size={12} />
-
-                          View Only
-
-                        </div>
+                        expandedId === update.id
+                          ? null
+                          : update.id
 
                       )
 
                     }
 
-                  </div>
+                    className="w-full px-7 py-6 flex items-center justify-between hover:bg-gray-50"
 
-                </button>
+                  >
 
-              );
+                    <div>
 
-            }
-          )
+                      <h2 className="text-2xl font-semibold text-left">
 
-        }
+                        {update.user_name}
 
-      </div>
+                      </h2>
 
-      {/* DATA */}
+                      <p className="text-gray-500 text-left mt-1">
 
-      <div className="space-y-4">
+                        {update.project_name}
 
-        {
+                      </p>
 
-          filteredUpdates.map(
-            (update) => (
+                    </div>
 
-              <div
+                    {
 
-                key={update.id}
-
-                className="border border-gray-200 rounded-3xl overflow-hidden"
-
-              >
-
-                <button
-
-                  onClick={() =>
-
-                    setExpandedId(
-
-                      expandedId ===
-                      update.id
-
-                        ? null
-
-                        : update.id
-
-                    )
-
-                  }
-
-                  className="w-full flex items-center justify-between px-7 py-6 hover:bg-gray-50 transition-all cursor-pointer"
-
-                >
-
-                  <div>
-
-                    <h2 className="text-2xl font-semibold text-left">
-
-                      {
-                        update.user_name
-                      }
-
-                    </h2>
-
-                    <p className="text-gray-500 mt-1 text-left">
-
-                      {
-                        update.project_name
-                      }
-
-                    </p>
-
-                  </div>
-
-                  {
-
-                    expandedId ===
-                    update.id
+                      expandedId === update.id
 
                       ? <ChevronUp />
 
                       : <ChevronDown />
 
-                  }
+                    }
 
-                </button>
+                  </button>
 
-                {
+                </div>
 
-                  expandedId ===
-                  update.id && (
+              ))
 
-                    <div className="px-7 pb-7 border-t border-gray-100">
+            }
 
-                      <div className="space-y-6 mt-6">
+          </div>
 
-                        <div>
+        )
 
-                          <h3 className="font-semibold mb-2">
+      }
 
-                            Linkedin Post
-
-                          </h3>
-
-                          <a
-
-                            href={
-                              update.linkedin_url
-                            }
-
-                            target="_blank"
-
-                            rel="noreferrer"
-
-                            className="text-blue-600 flex items-center gap-2 hover:underline"
-
-                          >
-
-                            Open Link
-
-                            <ExternalLink
-                              size={16}
-                            />
-
-                          </a>
-
-                        </div>
-
-                        <div>
-
-                          <h3 className="font-semibold mb-2">
-
-                            Demo Link
-
-                          </h3>
-
-                          <a
-
-                            href={
-                              update.demo_link
-                            }
-
-                            target="_blank"
-
-                            rel="noreferrer"
-
-                            className="text-blue-600 flex items-center gap-2 hover:underline"
-
-                          >
-
-                            Open Link
-
-                            <ExternalLink
-                              size={16}
-                            />
-
-                          </a>
-
-                        </div>
-
-                        <div>
-
-                          <h3 className="font-semibold mb-2">
-
-                            Challenges
-
-                          </h3>
-
-                          <p className="text-gray-600">
-
-                            {
-                              update.challenges
-                            }
-
-                          </p>
-
-                        </div>
-
-                      </div>
-
-                    </div>
-
-                  )
-
-                }
-
-              </div>
-
-            )
-          )
-
-        }
-
-      </div>
-
-      {/* MODAL */}
+      {/* NOT UPDATED */}
 
       {
 
-        showModal && (
+        filterType === "pending" && (
 
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="space-y-4">
 
-            <div className="bg-white rounded-3xl w-full max-w-2xl p-8 relative">
+            {
 
-              <button
+              pendingUsers.map((user,index) => (
 
-                onClick={() =>
-                  setShowModal(
-                    false
-                  )
-                }
-
-                className="absolute top-6 right-6 w-10 h-10 rounded-xl hover:bg-gray-100 flex items-center justify-center"
-
-              >
-
-                <X size={18} />
-
-              </button>
-
-              <h2 className="text-3xl font-bold mb-2">
-
-                Weekly Linkedin Update
-
-              </h2>
-
-              <p className="text-gray-500 mb-8">
-
-                Week {selectedWeek}
-
-              </p>
-
-              <div className="space-y-5">
-
-                <input
-
-                  type="text"
-
-                  placeholder="Linkedin Post URL"
-
-                  value={linkedinUrl}
-
-                  onChange={(e) =>
-                    setLinkedinUrl(
-                      e.target.value
-                    )
-                  }
-
-                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none"
-
-                />
-
-                <input
-
-                  type="text"
-
-                  placeholder="Demo / GitHub Link"
-
-                  value={demoLink}
-
-                  onChange={(e) =>
-                    setDemoLink(
-                      e.target.value
-                    )
-                  }
-
-                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none"
-
-                />
-
-                <textarea
-
-                  placeholder="Challenges faced this week"
-
-                  value={challenges}
-
-                  onChange={(e) =>
-                    setChallenges(
-                      e.target.value
-                    )
-                  }
-
-                  className="w-full h-32 border border-gray-200 rounded-2xl px-5 py-4 resize-none outline-none"
-
-                />
-
-                <button
-
-                  onClick={
-                    submitUpdate
-                  }
-
-                  className="w-full bg-black text-white py-4 rounded-2xl font-medium hover:opacity-90 transition-all"
-
+                <div
+                  key={index}
+                  className="border border-red-100 bg-red-50 rounded-3xl px-7 py-6"
                 >
 
-                  Submit Weekly Update
+                  <h2 className="text-xl text-red-600 font-medium">
 
-                </button>
+                    {user.full_name}
 
-              </div>
+                  </h2>
 
-            </div>
+                  <p className="text-red-400 mt-1">
+
+                    Linkedin update not submitted
+
+                  </p>
+
+                </div>
+
+              ))
+
+            }
 
           </div>
 
