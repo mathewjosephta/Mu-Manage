@@ -6,7 +6,6 @@ import {
 
 import {
 
-  LayoutDashboard,
   CalendarDays,
   Briefcase,
   LogOut
@@ -61,11 +60,12 @@ function MainLayout() {
         text-sm
         font-medium
         w-full
+        cursor-pointer
 
         ${
           location.pathname === path
 
-          ? "bg-black text-white"
+          ? "bg-black text-white shadow-md"
 
           : "text-gray-600 hover:bg-gray-100"
         }
@@ -107,35 +107,6 @@ function MainLayout() {
           {/* NAVIGATION */}
 
           <div className="space-y-2">
-
-            {/* DASHBOARD */}
-
-            {
-
-              currentUser?.role ===
-              "pm" && (
-
-                <button
-
-                  onClick={() =>
-                    navigate("/")
-                  }
-
-                  className={navClass("/")}
-
-                >
-
-                  <LayoutDashboard
-                    size={18}
-                  />
-
-                  Dashboard
-
-                </button>
-
-              )
-
-            }
 
             {/* DAILY */}
 
@@ -195,9 +166,9 @@ function MainLayout() {
 
           {/* USER */}
 
-          <div className="mb-4">
+          <div className="mb-5 mt-2">
 
-            <h2 className="font-semibold text-black">
+            <h2 className="font-semibold text-black text-[15px]">
 
               {
                 currentUser?.name
@@ -205,7 +176,7 @@ function MainLayout() {
 
             </h2>
 
-            <p className="text-sm text-gray-500 capitalize">
+            <p className="text-sm text-gray-500 capitalize mt-1">
 
               {
                 currentUser?.role
@@ -223,7 +194,7 @@ function MainLayout() {
               handleLogout
             }
 
-            className="flex items-center gap-3 bg-red-50 text-red-500 hover:bg-red-100 px-4 py-3 rounded-xl transition-all w-full border border-red-100"
+            className="flex items-center gap-3 bg-red-50 text-red-500 hover:bg-red-100 px-4 py-3 rounded-xl transition-all w-full border border-red-100 cursor-pointer"
 
           >
 

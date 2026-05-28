@@ -10,9 +10,6 @@ from "./layouts/MainLayout";
 
 // PAGES
 
-import Dashboard
-from "./pages/Dashboard";
-
 import DailyUpdates
 from "./pages/DailyUpdates";
 
@@ -79,7 +76,7 @@ function App() {
 
         />
 
-        {/* MAIN */}
+        {/* MAIN LAYOUT */}
 
         <Route
 
@@ -97,7 +94,7 @@ function App() {
 
         >
 
-          {/* ROLE BASED HOME */}
+          {/* DEFAULT PAGE */}
 
           <Route
 
@@ -105,22 +102,10 @@ function App() {
 
             element={
 
-              user?.role === "pm"
-
-                ? (
-
-                  <Dashboard />
-
-                )
-
-                : (
-
-                  <Navigate
-                    to="/daily-updates"
-                    replace
-                  />
-
-                )
+              <Navigate
+                to="/daily-updates"
+                replace
+              />
 
             }
 
