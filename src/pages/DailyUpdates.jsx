@@ -1,95 +1,49 @@
-import {
+  import {
   useEffect,
+  useMemo,
   useState
 } from "react";
 
 import {
-
-  CalendarDays,
-  ChevronDown,
-  ChevronUp,
-  Send,
-  CheckCircle2,
-  Download,
-  Sparkles
-
+  Flame
 } from "lucide-react";
 
 import { supabase }
 from "../services/supabase";
 
-import * as XLSX
-from "xlsx";
-
 function DailyUpdates() {
 
   const currentUser =
     JSON.parse(
-      localStorage.getItem(
-        "user"
-      )
+      localStorage.getItem("user")
     );
 
   const isPM =
-    currentUser?.role ===
-    "pm";
-
-  // TODAY
+    currentUser?.role === "pm";
 
   const today =
     new Date()
-      .toISOString()
-      .split("T")[0];
+      .toLocaleDateString(
+        "en-CA"
+      );
 
   // STATES
 
   const [selectedDate,
     setSelectedDate] =
-      useState(today);
+      useState(null);
 
   const [updates,
     setUpdates] =
       useState([]);
 
-  const [allMembers,
-    setAllMembers] =
-      useState([]);
-
-  const [expandedId,
-    setExpandedId] =
-      useState(null);
-
   const [loading,
     setLoading] =
       useState(true);
 
-  const [filterType,
-    setFilterType] =
-      useState("updated");
-
-  const [comments,
-    setComments] =
-      useState({});
-
-  const [savedCommentId,
-    setSavedCommentId] =
-      useState(null);
-
   const [showSuccess,
     setShowSuccess] =
       useState(false);
-
-  const [showExport,
-    setShowExport] =
-      useState(false);
-
-  const [startDate,
-    setStartDate] =
-      useState(today);
-
-  const [endDate,
-    setEndDate] =
-      useState(today);
 
   // FORM
 
@@ -109,37 +63,7 @@ function DailyUpdates() {
     setTomorrowGoals] =
       useState("");
 
-  // FETCH MEMBERS
-
-  const fetchMembers =
-    async () => {
-
-      const {
-
-        data,
-        error
-
-      } = await supabase
-
-        .from("users")
-
-        .select("*");
-
-      if (error) {
-
-        console.log(error);
-
-        return;
-
-      }
-
-      setAllMembers(
-        data || []
-      );
-
-    };
-
-  // FETCH UPDATES
+  // FETCH
 
   const fetchUpdates =
     async () => {
@@ -149,20 +73,18 @@ function DailyUpdates() {
       let query =
         supabase
 
-          .from(
-            "daily_updates"
-          )
+          .from("daily_updates")
 
           .select("*")
 
           .order(
-            "created_at",
+            "update_date",
             {
               ascending: false
             }
           );
 
-      // MEMBERS ONLY SEE THEIR DATA
+      // MEMBER ONLY SEES OWN DATA
 
       if (!isPM) {
 
@@ -175,10 +97,8 @@ function DailyUpdates() {
       }
 
       const {
-
         data,
         error
-
       } = await query;
 
       if (error) {
@@ -195,53 +115,143 @@ function DailyUpdates() {
 
     };
 
-  // LOAD
-
   useEffect(() => {
 
     fetchUpdates();
-    fetchMembers();
 
   }, []);
 
-  // FILTERED DATA
+  // LOAD FORM DATA
 
-  const selectedDateUpdates =
-    updates.filter(
-      (item) =>
-        item.update_date ===
-        selectedDate
+  useEffect(() => {
+
+    if (
+      !selectedDate
+    )
+      return;
+
+    const existing =
+      updates.find(
+        (item) =>
+          item.update_date ===
+          selectedDate
+      );
+
+    if (existing) {
+
+      setProjectName(
+        existing.project_name || ""
+      );
+
+      setCompletedToday(
+        existing.completed_today || ""
+      );
+
+      setBlockers(
+        existing.blockers || ""
+      );
+
+      setTomorrowGoals(
+        existing.tomorrow_goals || ""
+      );
+
+    }
+
+    else {
+
+      setProjectName("");
+      setCompletedToday("");
+      setBlockers("");
+      setTomorrowGoals("");
+
+    }
+
+  }, [
+    selectedDate,
+    updates
+  ]);
+
+  // CALENDAR
+
+  const currentMonth =
+    new Date();
+
+  const year =
+    currentMonth.getFullYear();
+
+  const month =
+    currentMonth.getMonth();
+
+  const daysInMonth =
+    new Date(
+      year,
+      month + 1,
+      0
+    ).getDate();
+
+  const calendarDays =
+    Array.from(
+      {
+        length:
+          daysInMonth
+      },
+      (_, i) => i + 1
     );
 
-  // UPDATED USERS
+  // STREAK
 
-  const updatedUsers =
-    selectedDateUpdates.map(
-      (item) =>
-        item.user_name
-    );
+  const streak =
+    useMemo(() => {
 
-  // NOT UPDATED USERS
+      const dates =
+        updates.map(
+          (u) =>
+            u.update_date
+        );
 
-  const pendingUsers =
-    allMembers.filter(
-      (member) =>
+      let count = 0;
 
-        !updatedUsers.includes(
-          member.name
-        )
-    );
+      let current =
+        new Date();
+
+      while (true) {
+
+        const date =
+          current.toLocaleDateString(
+            "en-CA"
+          );
+
+        if (
+          dates.includes(date)
+        ) {
+
+          count++;
+
+          current.setDate(
+            current.getDate() - 1
+          );
+
+        }
+
+        else {
+
+          break;
+
+        }
+
+      }
+
+      return count;
+
+    }, [updates]);
 
   // SUBMIT
 
   const submitUpdate =
     async () => {
 
-      // ONLY TODAY EDITABLE
-
       if (
-        selectedDate !==
-        today
+        selectedDate !== today
       ) {
 
         alert(
@@ -255,29 +265,19 @@ function DailyUpdates() {
       const existingUpdate =
         updates.find(
           (item) =>
-
-            item.user_name ===
-            currentUser.name &&
-
             item.update_date ===
             today
         );
 
       // UPDATE
 
-      if (
-        existingUpdate
-      ) {
+      if (existingUpdate) {
 
         const {
-
           error
-
         } = await supabase
 
-          .from(
-            "daily_updates"
-          )
+          .from("daily_updates")
 
           .update({
 
@@ -302,7 +302,6 @@ function DailyUpdates() {
         if (error) {
 
           console.log(error);
-
           return;
 
         }
@@ -314,14 +313,10 @@ function DailyUpdates() {
       else {
 
         const {
-
           error
-
         } = await supabase
 
-          .from(
-            "daily_updates"
-          )
+          .from("daily_updates")
 
           .insert([{
 
@@ -350,7 +345,6 @@ function DailyUpdates() {
         if (error) {
 
           console.log(error);
-
           return;
 
         }
@@ -359,141 +353,19 @@ function DailyUpdates() {
 
       fetchUpdates();
 
-      setShowSuccess(
-        true
-      );
+      // CLOSE POPUP
+
+      setSelectedDate(null);
+
+      // SUCCESS
+
+      setShowSuccess(true);
 
       setTimeout(() => {
 
-        setShowSuccess(
-          false
-        );
+        setShowSuccess(false);
 
-      }, 2000);
-
-    };
-
-  // COMMENT SAVE
-
-  const handleCommentSave =
-    async (id) => {
-
-      const text =
-        comments[id];
-
-      if (!text)
-        return;
-
-      const {
-
-        error
-
-      } = await supabase
-
-        .from(
-          "daily_updates"
-        )
-
-        .update({
-
-          manager_comment:
-            text
-
-        })
-
-        .eq(
-          "id",
-          id
-        );
-
-      if (error) {
-
-        console.log(error);
-
-        return;
-
-      }
-
-      setSavedCommentId(
-        id
-      );
-
-      setTimeout(() => {
-
-        setSavedCommentId(
-          null
-        );
-
-      }, 1500);
-
-    };
-
-  // EXPORT
-
-  const exportDailyUpdates =
-    () => {
-
-      const filtered =
-        updates.filter(
-          (item) =>
-
-            item.update_date >=
-            startDate &&
-
-            item.update_date <=
-            endDate
-        );
-
-      const exportData =
-        filtered.map(
-          (item) => ({
-
-            Name:
-              item.user_name,
-
-            Project:
-              item.project_name,
-
-            Completed:
-              item.completed_today,
-
-            Blockers:
-              item.blockers,
-
-            Goals:
-              item.tomorrow_goals,
-
-            Date:
-              item.update_date
-
-          })
-        );
-
-      const worksheet =
-        XLSX.utils.json_to_sheet(
-          exportData
-        );
-
-      const workbook =
-        XLSX.utils.book_new();
-
-      XLSX.utils.book_append_sheet(
-
-        workbook,
-
-        worksheet,
-
-        "Daily Updates"
-
-      );
-
-      XLSX.writeFile(
-
-        workbook,
-
-        "daily-updates.xlsx"
-
-      );
+      }, 2200);
 
     };
 
@@ -503,7 +375,7 @@ function DailyUpdates() {
 
     return (
 
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
 
         Loading...
 
@@ -513,21 +385,198 @@ function DailyUpdates() {
 
   }
 
+  // PM VIEW
+
+  if (isPM) {
+
+    return (
+
+      <div className="p-8">
+
+        <h1 className="text-4xl font-bold mb-8">
+
+          Daily Updates
+
+        </h1>
+
+        <div className="space-y-5">
+
+          {
+
+            updates.map(
+              (update) => (
+
+                <div
+
+                  key={update.id}
+
+                  className="border border-gray-200 rounded-3xl p-6"
+
+                >
+
+                  <h2 className="text-2xl font-semibold">
+
+                    {update.user_name}
+
+                  </h2>
+
+                  <p className="text-gray-500 mt-1">
+
+                    {update.update_date}
+
+                  </p>
+
+                  <div className="mt-5 space-y-4">
+
+                    <div>
+
+                      <h3 className="font-semibold mb-1">
+
+                        Project
+
+                      </h3>
+
+                      <p>
+
+                        {update.project_name}
+
+                      </p>
+
+                    </div>
+
+                    <div>
+
+                      <h3 className="font-semibold mb-1">
+
+                        Completed Today
+
+                      </h3>
+
+                      <p>
+
+                        {update.completed_today}
+
+                      </p>
+
+                    </div>
+
+                    <div>
+
+                      <h3 className="font-semibold mb-1">
+
+                        Blockers
+
+                      </h3>
+
+                      <p>
+
+                        {update.blockers}
+
+                      </p>
+
+                    </div>
+
+                    <div>
+
+                      <h3 className="font-semibold mb-1">
+
+                        Tomorrow Goals
+
+                      </h3>
+
+                      <p>
+
+                        {update.tomorrow_goals}
+
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              )
+            )
+
+          }
+
+        </div>
+
+      </div>
+
+    );
+
+  }
+
+  // MEMBER VIEW
+
   return (
 
     <div className="min-h-screen bg-white p-8">
 
-      {/* SUCCESS */}
+      {/* SUCCESS MODAL */}
 
       {
 
         showSuccess && (
 
-          <div className="fixed top-8 right-8 bg-black text-white px-6 py-5 rounded-3xl flex items-center gap-3 z-50 shadow-2xl">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
 
-            <Sparkles size={20} />
+            {/* OUTER */}
 
-            Update Saved Successfully
+            <div className="relative flex items-center justify-center">
+
+              {/* WAVE 1 */}
+
+              <div className="absolute w-[220px] h-[220px] rounded-full bg-green-400/20 animate-wave1" />
+
+              {/* WAVE 2 */}
+
+              <div className="absolute w-[170px] h-[170px] rounded-full bg-green-400/25 animate-wave2" />
+
+              {/* CARD */}
+
+              <div className="relative bg-white px-14 py-12 rounded-[36px] shadow-2xl flex flex-col items-center animate-successAppear">
+
+                {/* TICK */}
+
+                <div className="w-28 h-28 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-14 h-14 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
+
+                  </svg>
+
+                </div>
+
+                <h2 className="text-3xl font-bold mt-7">
+
+                  Update Saved
+
+                </h2>
+
+                <p className="text-gray-500 mt-2 text-center">
+
+                  Daily progress submitted successfully
+
+                </p>
+
+              </div>
+
+            </div>
 
           </div>
 
@@ -555,541 +604,256 @@ function DailyUpdates() {
 
         </div>
 
+        <div className="flex items-center gap-2 bg-orange-50 text-orange-500 px-5 py-3 rounded-2xl">
+
+          <Flame size={18} />
+
+          {streak} Day Streak
+
+        </div>
+
+      </div>
+
+      {/* CALENDAR */}
+
+      <div className="grid grid-cols-7 gap-4">
+
         {
 
-          isPM && (
+          calendarDays.map(
+            (day) => {
 
-            <button
+              const date =
+                `${year}-${
+                  String(month + 1).padStart(2, "0")
+                }-${
+                  String(day).padStart(2, "0")
+                }`;
 
-              onClick={() =>
-                setShowExport(
-                  !showExport
+              const hasUpdate =
+                updates.some(
+                  (u) =>
+                    u.update_date ===
+                    date
+                );
+
+              const isToday =
+                date === today;
+
+              const isFuture =
+                date > today;
+
+              const weekDay =
+                new Date(
+                  year,
+                  month,
+                  day
                 )
-              }
 
-              className="flex items-center gap-2 bg-black text-white px-5 py-3 rounded-2xl"
+                  .toLocaleDateString(
+                    "en-US",
+                    {
+                      weekday: "short"
+                    }
+                  );
 
-            >
+              return (
 
-              <Download size={18} />
+                <button
 
-              Export
+                  key={day}
 
-            </button>
+                  disabled={isFuture}
 
+                  onClick={() =>
+                    setSelectedDate(date)
+                  }
+
+                  className={`h-[92px] rounded-xl border transition-all flex flex-col items-center justify-center ${
+                    isFuture
+                      ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+                      : hasUpdate
+                      ? "bg-green-50 border-green-300"
+                      : "bg-white border-gray-300 hover:border-black"
+                  } ${
+                    isToday
+                      ? "ring-2 ring-black"
+                      : ""
+                  }`}
+
+                >
+
+                  <p className="text-lg font-medium text-blue-500">
+
+                    {weekDay}
+
+                  </p>
+
+                  <p className="text-lg text-blue-500">
+
+                    {day}
+
+                  </p>
+
+                  {
+
+                    hasUpdate && (
+
+                      <div className="w-2 h-2 bg-green-600 rounded-full mt-2" />
+
+                    )
+
+                  }
+
+                </button>
+
+              );
+
+            }
           )
 
         }
 
       </div>
 
-      {/* MEMBER VIEW */}
+      {/* POPUP */}
 
       {
 
-        !isPM && (
+        selectedDate && (
 
-          <div className="border border-gray-200 rounded-3xl p-8 mb-8">
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-6">
 
-            <div className="flex items-center gap-3 mb-6">
+            <div className="bg-white w-full max-w-3xl rounded-3xl p-8 relative max-h-[90vh] overflow-y-auto">
 
-              <CalendarDays size={24} />
-
-              <input
-
-                type="date"
-
-                value={selectedDate}
-
-                onChange={(e) =>
-                  setSelectedDate(
-                    e.target.value
-                  )
-                }
-
-                max={today}
-
-                className="border border-gray-200 rounded-2xl px-4 py-3"
-
-              />
-
-            </div>
-
-            <div className="space-y-5">
-
-              <input
-
-                type="text"
-
-                placeholder="Project Name"
-
-                value={projectName}
-
-                onChange={(e) =>
-                  setProjectName(
-                    e.target.value
-                  )
-                }
-
-                className="w-full border border-gray-200 rounded-2xl px-5 py-4"
-
-              />
-
-              <textarea
-
-                placeholder="Completed Today"
-
-                value={completedToday}
-
-                onChange={(e) =>
-                  setCompletedToday(
-                    e.target.value
-                  )
-                }
-
-                className="w-full h-28 border border-gray-200 rounded-2xl px-5 py-4 resize-none"
-
-              />
-
-              <textarea
-
-                placeholder="Blockers"
-
-                value={blockers}
-
-                onChange={(e) =>
-                  setBlockers(
-                    e.target.value
-                  )
-                }
-
-                className="w-full h-24 border border-gray-200 rounded-2xl px-5 py-4 resize-none"
-
-              />
-
-              <textarea
-
-                placeholder="Tomorrow Goals"
-
-                value={tomorrowGoals}
-
-                onChange={(e) =>
-                  setTomorrowGoals(
-                    e.target.value
-                  )
-                }
-
-                className="w-full h-24 border border-gray-200 rounded-2xl px-5 py-4 resize-none"
-
-              />
-
-              <button
-
-                onClick={
-                  submitUpdate
-                }
-
-                className="bg-black text-white px-6 py-4 rounded-2xl"
-
-              >
-
-                Save Update
-
-              </button>
-
-            </div>
-
-          </div>
-
-        )
-
-      }
-
-      {/* PM VIEW */}
-
-      {
-
-        isPM && (
-
-          <div>
-
-            <div className="flex gap-3 mb-6">
-
-              <input
-
-                type="date"
-
-                value={selectedDate}
-
-                onChange={(e) =>
-                  setSelectedDate(
-                    e.target.value
-                  )
-                }
-
-                className="border border-gray-200 rounded-2xl px-5 py-3"
-
-              />
+              {/* CLOSE */}
 
               <button
 
                 onClick={() =>
-                  setFilterType(
-                    "updated"
-                  )
+                  setSelectedDate(null)
                 }
 
-                className={`
-
-                  px-5 py-3 rounded-2xl
-
-                  ${
-                    filterType ===
-                    "updated"
-
-                    ? "bg-black text-white"
-
-                    : "border border-gray-200"
-                  }
-
-                `}
+                className="absolute top-5 right-5 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-xl"
 
               >
 
-                Updated
+                ×
 
               </button>
 
-              <button
+              {/* HEADER */}
 
-                onClick={() =>
-                  setFilterType(
-                    "pending"
-                  )
-                }
+              <div className="mb-6">
 
-                className={`
+                <h2 className="text-2xl font-bold">
 
-                  px-5 py-3 rounded-2xl
+                  {
 
-                  ${
-                    filterType ===
-                    "pending"
+                    selectedDate === today
 
-                    ? "bg-black text-white"
+                    ? "Today's Update"
 
-                    : "border border-gray-200"
+                    : "Previous Update"
+
                   }
 
-                `}
+                </h2>
 
-              >
+                <p className="text-gray-500 mt-1">
 
-                Not Updated
+                  {selectedDate}
 
-              </button>
+                </p>
+
+              </div>
+
+              {/* FORM */}
+
+              <div className="space-y-5">
+
+                <input
+                  type="text"
+                  placeholder="Project Name"
+                  value={projectName}
+                  disabled={
+                    selectedDate !== today
+                  }
+                  onChange={(e) =>
+                    setProjectName(
+                      e.target.value
+                    )
+                  }
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-4"
+                />
+
+                <textarea
+                  placeholder="Completed Today"
+                  value={completedToday}
+                  disabled={
+                    selectedDate !== today
+                  }
+                  onChange={(e) =>
+                    setCompletedToday(
+                      e.target.value
+                    )
+                  }
+                  className="w-full h-32 border border-gray-200 rounded-2xl px-5 py-4 resize-none"
+                />
+
+                <textarea
+                  placeholder="Blockers"
+                  value={blockers}
+                  disabled={
+                    selectedDate !== today
+                  }
+                  onChange={(e) =>
+                    setBlockers(
+                      e.target.value
+                    )
+                  }
+                  className="w-full h-28 border border-gray-200 rounded-2xl px-5 py-4 resize-none"
+                />
+
+                <textarea
+                  placeholder="Tomorrow Goals"
+                  value={tomorrowGoals}
+                  disabled={
+                    selectedDate !== today
+                  }
+                  onChange={(e) =>
+                    setTomorrowGoals(
+                      e.target.value
+                    )
+                  }
+                  className="w-full h-28 border border-gray-200 rounded-2xl px-5 py-4 resize-none"
+                />
+
+                {
+
+                  selectedDate === today && (
+
+                    <button
+
+                      onClick={
+                        submitUpdate
+                      }
+
+                      className="bg-black text-white px-6 py-4 rounded-2xl hover:scale-[1.02] transition-all"
+
+                    >
+
+                      Save Update
+
+                    </button>
+
+                  )
+
+                }
+
+              </div>
 
             </div>
-
-            {/* UPDATED */}
-
-            {
-
-              filterType ===
-              "updated" && (
-
-                <div className="space-y-4">
-
-                  {
-
-                    selectedDateUpdates.map(
-                      (update) => (
-
-                        <div
-
-                          key={update.id}
-
-                          className="border border-gray-200 rounded-3xl overflow-hidden"
-
-                        >
-
-                          <button
-
-                            onClick={() =>
-
-                              setExpandedId(
-
-                                expandedId ===
-                                update.id
-
-                                  ? null
-
-                                  : update.id
-
-                              )
-
-                            }
-
-                            className="w-full flex items-center justify-between px-7 py-6 hover:bg-gray-50"
-
-                          >
-
-                            <div>
-
-                              <h2 className="text-2xl font-semibold text-left">
-
-                                {
-                                  update.user_name
-                                }
-
-                              </h2>
-
-                              <p className="text-gray-500 mt-1 text-left">
-
-                                {
-                                  update.project_name
-                                }
-
-                              </p>
-
-                            </div>
-
-                            {
-
-                              expandedId ===
-                              update.id
-
-                                ? <ChevronUp />
-
-                                : <ChevronDown />
-
-                            }
-
-                          </button>
-
-                          {
-
-                            expandedId ===
-                            update.id && (
-
-                              <div className="px-7 pb-7 border-t border-gray-100">
-
-                                <div className="space-y-5 mt-6">
-
-                                  <div>
-
-                                    <h3 className="font-semibold mb-2">
-
-                                      Completed Today
-
-                                    </h3>
-
-                                    <p className="text-gray-600">
-
-                                      {
-                                        update.completed_today
-                                      }
-
-                                    </p>
-
-                                  </div>
-
-                                  <div>
-
-                                    <h3 className="font-semibold mb-2">
-
-                                      Blockers
-
-                                    </h3>
-
-                                    <p className="text-gray-600">
-
-                                      {
-                                        update.blockers
-                                      }
-
-                                    </p>
-
-                                  </div>
-
-                                  <div>
-
-                                    <h3 className="font-semibold mb-2">
-
-                                      Tomorrow Goals
-
-                                    </h3>
-
-                                    <p className="text-gray-600">
-
-                                      {
-                                        update.tomorrow_goals
-                                      }
-
-                                    </p>
-
-                                  </div>
-
-                                  {/* COMMENT */}
-
-                                  <div>
-
-                                    <h3 className="font-semibold mb-3">
-
-                                      Manager Comment
-
-                                    </h3>
-
-                                    <div className="flex items-center gap-3">
-
-                                      <textarea
-
-                                        value={
-                                          comments[
-                                            update.id
-                                          ] ??
-
-                                          update.manager_comment ??
-
-                                          ""
-                                        }
-
-                                        onChange={(e) =>
-
-                                          setComments({
-
-                                            ...comments,
-
-                                            [update.id]:
-                                              e.target.value
-
-                                          })
-
-                                        }
-
-                                        className="flex-1 h-12 border border-gray-200 rounded-2xl px-4 py-3 resize-none"
-
-                                      />
-
-                                      <button
-
-                                        onClick={() =>
-                                          handleCommentSave(
-                                            update.id
-                                          )
-                                        }
-
-                                        className={`
-
-                                          w-12 h-12
-                                          rounded-2xl
-                                          flex items-center justify-center
-
-                                          ${
-                                            savedCommentId ===
-                                            update.id
-
-                                            ? "bg-green-500 text-white"
-
-                                            : "bg-black text-white"
-                                          }
-
-                                        `}
-
-                                      >
-
-                                        {
-
-                                          savedCommentId ===
-                                          update.id
-
-                                            ? (
-
-                                              <CheckCircle2 size={18} />
-
-                                            )
-
-                                            : (
-
-                                              <Send size={18} />
-
-                                            )
-
-                                        }
-
-                                      </button>
-
-                                    </div>
-
-                                  </div>
-
-                                </div>
-
-                              </div>
-
-                            )
-
-                          }
-
-                        </div>
-
-                      )
-                    )
-
-                  }
-
-                </div>
-
-              )
-
-            }
-
-            {/* NOT UPDATED */}
-
-            {
-
-              filterType ===
-              "pending" && (
-
-                <div className="space-y-4">
-
-                  {
-
-                    pendingUsers.map(
-                      (user, index) => (
-
-                        <div
-
-                          key={index}
-
-                          className="border border-red-100 bg-red-50 rounded-3xl px-7 py-6"
-
-                        >
-
-                          <h2 className="text-xl font-medium text-red-600">
-
-                            {user.name}
-
-                          </h2>
-
-                          <p className="text-red-400 mt-1">
-
-                            Daily update not submitted
-
-                          </p>
-
-                        </div>
-
-                      )
-                    )
-
-                  }
-
-                </div>
-
-              )
-
-            }
 
           </div>
 
