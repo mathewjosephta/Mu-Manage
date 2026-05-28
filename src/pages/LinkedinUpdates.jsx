@@ -5,16 +5,15 @@ import {
 
 import {
 
-  Briefcase,
   Download,
   Search,
   ExternalLink,
-  CalendarDays,
   Plus,
   ChevronDown,
   ChevronUp,
-  Send,
-  CheckCircle2
+  Sparkles,
+  X,
+  Lock
 
 } from "lucide-react";
 
@@ -37,6 +36,127 @@ function LinkedinUpdates() {
     currentUser?.role ===
     "pm";
 
+  // CURRENT WEEK
+
+  const getCurrentWeek =
+    () => {
+
+      const now =
+        new Date();
+
+      const start =
+        new Date(
+          now.getFullYear(),
+          0,
+          1
+        );
+
+      const days =
+        Math.floor(
+
+          (
+            now - start
+          ) /
+
+          (
+            24 * 60 * 60 * 1000
+          )
+        );
+
+      return Math.ceil(
+        (
+          days +
+          start.getDay() +
+          1
+        ) / 7
+      );
+
+    };
+
+  // LIMIT TO 4 WEEKS
+
+  const actualWeek =
+    getCurrentWeek();
+
+  const currentWeek =
+    actualWeek > 4
+      ? 4
+      : actualWeek;
+
+  // TIMER
+
+  const getWeekCountdown =
+    () => {
+
+      const now =
+        new Date();
+
+      const endOfWeek =
+        new Date(now);
+
+      endOfWeek.setDate(
+        now.getDate() +
+        (
+          7 - now.getDay()
+        )
+      );
+
+      endOfWeek.setHours(
+        23,
+        59,
+        59,
+        999
+      );
+
+      const diff =
+        endOfWeek - now;
+
+      const days =
+        Math.floor(
+          diff /
+          (
+            1000 * 60 * 60 * 24
+          )
+        );
+
+      const hours =
+        Math.floor(
+
+          (
+            diff %
+
+            (
+              1000 * 60 * 60 * 24
+            )
+          ) /
+
+          (
+            1000 * 60 * 60
+          )
+        );
+
+      const minutes =
+        Math.floor(
+
+          (
+            diff %
+
+            (
+              1000 * 60 * 60
+            )
+          ) /
+
+          (
+            1000 * 60
+          )
+        );
+
+      return `${days}d ${hours}h ${minutes}m`;
+
+    };
+
+  // STATES
+
   const [updates,
     setUpdates] =
       useState([]);
@@ -51,7 +171,9 @@ function LinkedinUpdates() {
 
   const [selectedWeek,
     setSelectedWeek] =
-      useState(1);
+      useState(
+        currentWeek
+      );
 
   const [showModal,
     setShowModal] =
@@ -61,17 +183,15 @@ function LinkedinUpdates() {
     setExpandedId] =
       useState(null);
 
-  const [comments,
-    setComments] =
-      useState({});
+  const [showSuccess,
+    setShowSuccess] =
+      useState(false);
 
-  const [savedCommentId,
-    setSavedCommentId] =
-      useState(null);
-
-  const [filterType,
-    setFilterType] =
-      useState(null);
+  const [countdown,
+    setCountdown] =
+      useState(
+        getWeekCountdown()
+      );
 
   // FORM
 
@@ -86,6 +206,26 @@ function LinkedinUpdates() {
   const [challenges,
     setChallenges] =
       useState("");
+
+  // LIVE TIMER
+
+  useEffect(() => {
+
+    const interval =
+      setInterval(() => {
+
+        setCountdown(
+          getWeekCountdown()
+        );
+
+      }, 60000);
+
+    return () =>
+      clearInterval(
+        interval
+      );
+
+  }, []);
 
   // FETCH
 
@@ -116,8 +256,6 @@ function LinkedinUpdates() {
             }
           );
 
-      // MEMBERS SEE ONLY THEIR DATA
-
       if (!isPM) {
 
         query =
@@ -146,13 +284,19 @@ function LinkedinUpdates() {
       const dummyLinkedinPosts = [
 
         {
-          id: 1,
+          id: 101,
+
+          user_email:
+            "mathew@mumange.com",
 
           user_name:
-            "Fathima P Ajvad",
+            "Mathew Joseph",
+
+          role:
+            "member",
 
           project_name:
-            "Campus Bites",
+            "μManage",
 
           week_number: 1,
 
@@ -160,28 +304,28 @@ function LinkedinUpdates() {
             "https://linkedin.com",
 
           demo_link:
-            "https://vercel.com",
+            "https://mu-manage.vercel.app",
 
           challenges:
-            "Responsive issue in analytics dashboard.",
-
-          manager_comment:
-            "Good consistency. Improve visual hierarchy.",
-
-          post_status:
-            "posted"
+            "Implemented role based routing and fixed Supabase authentication flow."
         },
 
         {
-          id: 2,
+          id: 102,
+
+          user_email:
+            "gayathri@mumange.com",
 
           user_name:
             "Gayathri M Nair",
 
+          role:
+            "member",
+
           project_name:
             "Make it Easy",
 
-          week_number: 1,
+          week_number: 2,
 
           linkedin_url:
             "https://linkedin.com",
@@ -190,47 +334,20 @@ function LinkedinUpdates() {
             "https://github.com",
 
           challenges:
-            "Printer API instability.",
-
-          manager_comment:
-            "",
-
-          post_status:
-            "posted"
+            "Responsive issue in mobile layouts."
         },
 
         {
-          id: 3,
+          id: 103,
+
+          user_email:
+            "yeldo@mumange.com",
 
           user_name:
             "Yeldo K Varghese",
 
-          project_name:
-            "Codenx",
-
-          week_number: 2,
-
-          linkedin_url:
-            "https://linkedin.com",
-
-          demo_link:
-            "https://figma.com",
-
-          challenges:
-            "Realtime sync issue.",
-
-          manager_comment:
-            "Add screenshots next time.",
-
-          post_status:
-            "posted"
-        },
-
-        {
-          id: 4,
-
-          user_name:
-            "Noel Sabu",
+          role:
+            "member",
 
           project_name:
             "Codenx",
@@ -241,16 +358,10 @@ function LinkedinUpdates() {
             "https://linkedin.com",
 
           demo_link:
-            "",
+            "https://figma.com",
 
           challenges:
-            "Performance lag in feeds.",
-
-          manager_comment:
-            "",
-
-          post_status:
-            "draft"
+            "Realtime synchronization issues."
         }
 
       ];
@@ -299,48 +410,30 @@ function LinkedinUpdates() {
       }
     );
 
-  // MEMBERS
-
-  const allMembers = [
-
-    "Fathima P Ajvad",
-    "Swaliha C A",
-    "Nandana Ramachandran",
-    "Gautham Krishna",
-    "Gayathri M Nair",
-    "Krishnan unni",
-    "Aksa Thomas",
-    "Aadya Ajayan",
-    "Yeldo K Varghese",
-    "Sahala Mariyam P S",
-    "Noel Sabu",
-    "Nimal K G"
-
-  ];
-
-  const submittedUsers =
-    filteredUpdates.map(
-      (item) =>
-        item.user_name
-    );
-
-  const pendingUsers =
-    allMembers.filter(
-      (member) =>
-        !submittedUsers.includes(
-          member
-        )
-    );
-
   // SUBMIT
 
   const submitUpdate =
     async () => {
 
+      // ONLY CURRENT WEEK
+
+      if (
+        selectedWeek !==
+        currentWeek
+      ) {
+
+        alert(
+          "You can only submit progress for current week"
+        );
+
+        return;
+
+      }
+
       if (!linkedinUrl) {
 
         alert(
-          "Add linkedin URL"
+          "Add Linkedin URL"
         );
 
         return;
@@ -400,81 +493,17 @@ function LinkedinUpdates() {
 
       fetchUpdates();
 
-    };
-
-  // COMMENT SAVE
-
-  const handleCommentSave =
-    async (id) => {
-
-      const text =
-        comments[id];
-
-      if (!text)
-        return;
-
-      const {
-
-        error
-
-      } = await supabase
-
-        .from(
-          "linkedin_updates"
-        )
-
-        .update({
-
-          manager_comment:
-            text
-
-        })
-
-        .eq(
-          "id",
-          id
-        );
-
-      if (error) {
-
-        console.log(error);
-
-        return;
-
-      }
-
-      setUpdates(
-
-        updates.map(
-          (item) =>
-
-            item.id === id
-
-              ? {
-
-                  ...item,
-
-                  manager_comment:
-                    text
-
-                }
-
-              : item
-        )
-
-      );
-
-      setSavedCommentId(
-        id
+      setShowSuccess(
+        true
       );
 
       setTimeout(() => {
 
-        setSavedCommentId(
-          null
+        setShowSuccess(
+          false
         );
 
-      }, 2000);
+      }, 2200);
 
     };
 
@@ -503,10 +532,7 @@ function LinkedinUpdates() {
               item.demo_link,
 
             Challenges:
-              item.challenges,
-
-            Comment:
-              item.manager_comment || ""
+              item.challenges
 
           })
         );
@@ -539,8 +565,6 @@ function LinkedinUpdates() {
 
     };
 
-  // LOADING
-
   if (loading) {
 
     return (
@@ -562,6 +586,42 @@ function LinkedinUpdates() {
   return (
 
     <div className="min-h-screen bg-white p-8">
+
+      {/* SUCCESS */}
+
+      {
+
+        showSuccess && (
+
+          <div className="fixed top-8 right-8 z-50">
+
+            <div className="bg-black text-white px-6 py-5 rounded-3xl shadow-2xl flex items-center gap-4">
+
+              <Sparkles size={22} />
+
+              <div>
+
+                <h2 className="font-semibold text-lg">
+
+                  Update Submitted
+
+                </h2>
+
+                <p className="text-sm text-gray-300">
+
+                  Weekly Linkedin update saved
+
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )
+
+      }
 
       {/* HEADER */}
 
@@ -591,60 +651,11 @@ function LinkedinUpdates() {
 
         </div>
 
-        {/* ACTIONS */}
-
         <div className="flex flex-wrap gap-4">
-
-          {/* WEEK */}
-
-          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-5 py-4 hover:border-black transition-all">
-
-            <CalendarDays
-              size={20}
-              className="text-gray-500"
-            />
-
-            <select
-
-              value={
-                selectedWeek
-              }
-
-              onChange={(e) =>
-                setSelectedWeek(
-                  Number(
-                    e.target.value
-                  )
-                )
-              }
-
-              className="outline-none bg-transparent text-[15px] cursor-pointer"
-
-            >
-
-              <option value={1}>
-                Week 1
-              </option>
-
-              <option value={2}>
-                Week 2
-              </option>
-
-              <option value={3}>
-                Week 3
-              </option>
-
-              <option value={4}>
-                Week 4
-              </option>
-
-            </select>
-
-          </div>
 
           {/* SEARCH */}
 
-          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-5 py-4 hover:border-black transition-all">
+          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-5 py-4">
 
             <Search
               size={20}
@@ -683,7 +694,7 @@ function LinkedinUpdates() {
                   exportExcel
                 }
 
-                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl text-[15px] font-medium hover:opacity-90 transition-all"
+                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl"
 
               >
 
@@ -699,7 +710,7 @@ function LinkedinUpdates() {
 
           }
 
-          {/* ADD */}
+          {/* SUBMIT BUTTON */}
 
           {
 
@@ -713,7 +724,7 @@ function LinkedinUpdates() {
                   )
                 }
 
-                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl text-[15px] font-medium hover:opacity-90 transition-all"
+                className="flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl"
 
               >
 
@@ -721,7 +732,7 @@ function LinkedinUpdates() {
                   size={18}
                 />
 
-                Add Update
+                Submit Progress
 
               </button>
 
@@ -733,352 +744,83 @@ function LinkedinUpdates() {
 
       </div>
 
-      {/* FILTER BUTTONS */}
+      {/* WEEK SELECTOR */}
 
-      {
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
 
-        isPM && (
+        {
 
-          <div className="flex gap-3 mb-6">
+          [1, 2, 3, 4].map(
+            (week) => {
 
-            <button
+              const isCurrent =
+                week ===
+                currentWeek;
 
-              onClick={() =>
-                setFilterType(
-                  "submitted"
-                )
-              }
+              return (
 
-              className={`
+                <button
 
-                px-5 py-3 rounded-2xl transition-all
+                  key={week}
 
-                ${
-                  filterType === null ||
-                  filterType === "submitted"
+                  onClick={() => {
 
-                  ? "bg-black text-white"
+                    // VIEW ANY WEEK
 
-                  : "border border-gray-200 hover:border-black"
-                }
+                    setSelectedWeek(
+                      week
+                    );
 
-              `}
+                  }}
 
-            >
+                  className={`
 
-              Submitted
+                    h-[100px]
+                    rounded-3xl
+                    border
+                    transition-all
+                    font-semibold
+                    text-lg
+                    cursor-pointer
 
-            </button>
+                    ${
+                      selectedWeek ===
+                      week
 
-            <button
+                      ? "bg-black text-white border-black"
 
-              onClick={() =>
-                setFilterType(
-                  "pending"
-                )
-              }
+                      : "bg-white border-gray-200 hover:border-black hover:scale-[1.02]"
+                    }
 
-              className={`
+                  `}
 
-                px-5 py-3 rounded-2xl transition-all
+                >
 
-                ${
-                  filterType === "pending"
+                  <div className="flex flex-col items-center justify-center">
 
-                  ? "bg-black text-white"
+                    <span>
 
-                  : "border border-gray-200 hover:border-black"
-                }
+                      Week {week}
 
-              `}
-
-            >
-
-              Not Submitted
-
-            </button>
-
-          </div>
-
-        )
-
-      }
-
-      {/* SUBMITTED */}
-
-      {
-
-        (
-          filterType === null ||
-
-          filterType === "submitted"
-        ) && (
-
-          <div className="space-y-4">
-
-            {
-
-              filteredUpdates.map(
-                (update) => (
-
-                  <div
-
-                    key={update.id}
-
-                    className="border border-gray-200 rounded-3xl overflow-hidden hover:border-black transition-all"
-
-                  >
-
-                    {/* HEADER */}
-
-                    <button
-
-                      onClick={() =>
-
-                        setExpandedId(
-
-                          expandedId ===
-                          update.id
-
-                            ? null
-
-                            : update.id
-
-                        )
-
-                      }
-
-                      className="w-full flex items-center justify-between px-7 py-6 hover:bg-gray-50 transition-all"
-
-                    >
-
-                      <div>
-
-                        <h2 className="text-2xl font-semibold text-left text-black">
-
-                          {
-                            update.user_name
-                          }
-
-                        </h2>
-
-                        <p className="text-gray-500 mt-1 text-left">
-
-                          {
-                            update.project_name
-                          }
-
-                        </p>
-
-                      </div>
-
-                      <div className="flex items-center gap-4">
-
-                        <div className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium">
-
-                          Week {
-                            update.week_number
-                          }
-
-                        </div>
-
-                        {
-
-                          expandedId ===
-                          update.id
-
-                            ? <ChevronUp />
-
-                            : <ChevronDown />
-
-                        }
-
-                      </div>
-
-                    </button>
-
-                    {/* CONTENT */}
+                    </span>
 
                     {
 
-                      expandedId ===
-                      update.id && (
+                      isCurrent ? (
 
-                        <div className="px-7 pb-7 border-t border-gray-100">
+                        <p className="text-xs mt-2 opacity-80">
 
-                          <div className="space-y-6 mt-6">
+                          Ends in {countdown}
 
-                            <a
+                        </p>
 
-                              href={
-                                update.linkedin_url
-                              }
+                      ) : (
 
-                              target="_blank"
+                        <div className="flex items-center gap-1 mt-2 text-xs opacity-60">
 
-                              rel="noreferrer"
+                          <Lock size={12} />
 
-                              className="flex items-center gap-3 text-black font-medium hover:opacity-70 transition-all"
-
-                            >
-
-                              <ExternalLink
-                                size={18}
-                              />
-
-                              Open Linkedin Post
-
-                            </a>
-
-                            {
-
-                              update.demo_link && (
-
-                                <a
-
-                                  href={
-                                    update.demo_link
-                                  }
-
-                                  target="_blank"
-
-                                  rel="noreferrer"
-
-                                  className="flex items-center gap-3 text-gray-600 hover:text-black transition-all"
-
-                                >
-
-                                  <Briefcase
-                                    size={18}
-                                  />
-
-                                  Open Demo
-
-                                </a>
-
-                              )
-
-                            }
-
-                            {
-
-                              update.challenges && (
-
-                                <div>
-
-                                  <h3 className="font-semibold text-black mb-2">
-
-                                    Challenges
-
-                                  </h3>
-
-                                  <p className="text-gray-600 leading-relaxed">
-
-                                    {
-                                      update.challenges
-                                    }
-
-                                  </p>
-
-                                </div>
-
-                              )
-
-                            }
-
-                            {/* COMMENT */}
-
-                            {
-
-                              isPM && (
-
-                                <div>
-
-                                  <h3 className="font-semibold mb-3">
-
-                                    Manager Comment
-
-                                  </h3>
-
-                                  <div className="flex items-center gap-3">
-
-                                    <textarea
-
-                                      value={
-                                        comments[
-                                          update.id
-                                        ] ??
-
-                                        update.manager_comment ??
-
-                                        ""
-                                      }
-
-                                      onChange={(e) =>
-
-                                        setComments({
-
-                                          ...comments,
-
-                                          [update.id]:
-                                            e.target.value
-
-                                        })
-
-                                      }
-
-                                      placeholder="Write feedback..."
-
-                                      className="flex-1 h-12 border border-gray-200 rounded-2xl px-4 py-3 resize-none outline-none focus:border-black transition-all"
-
-                                    />
-
-                                    <button
-
-                                      onClick={() =>
-                                        handleCommentSave(
-                                          update.id
-                                        )
-                                      }
-
-                                      className="bg-black text-white w-12 h-12 rounded-2xl flex items-center justify-center hover:scale-105 transition-all"
-
-                                    >
-
-                                      {
-
-                                        savedCommentId ===
-                                        update.id
-
-                                          ? (
-
-                                            <CheckCircle2
-                                              size={18}
-                                            />
-
-                                          )
-
-                                          : (
-
-                                            <Send
-                                              size={18}
-                                            />
-
-                                          )
-
-                                      }
-
-                                    </button>
-
-                                  </div>
-
-                                </div>
-
-                              )
-
-                            }
-
-                          </div>
+                          View Only
 
                         </div>
 
@@ -1088,63 +830,195 @@ function LinkedinUpdates() {
 
                   </div>
 
-                )
-              )
+                </button>
+
+              );
 
             }
+          )
 
-          </div>
+        }
 
-        )
+      </div>
 
-      }
+      {/* DATA */}
 
-      {/* PENDING */}
+      <div className="space-y-4">
 
-      {
+        {
 
-        filterType ===
-        "pending" && (
+          filteredUpdates.map(
+            (update) => (
 
-          <div className="space-y-4">
+              <div
 
-            {
+                key={update.id}
 
-              pendingUsers.map(
-                (user, index) => (
+                className="border border-gray-200 rounded-3xl overflow-hidden"
 
-                  <div
+              >
 
-                    key={index}
+                <button
 
-                    className="border border-gray-200 rounded-3xl px-7 py-6 hover:border-black transition-all"
+                  onClick={() =>
 
-                  >
+                    setExpandedId(
 
-                    <h2 className="text-xl font-medium">
+                      expandedId ===
+                      update.id
 
-                      {user}
+                        ? null
+
+                        : update.id
+
+                    )
+
+                  }
+
+                  className="w-full flex items-center justify-between px-7 py-6 hover:bg-gray-50 transition-all cursor-pointer"
+
+                >
+
+                  <div>
+
+                    <h2 className="text-2xl font-semibold text-left">
+
+                      {
+                        update.user_name
+                      }
 
                     </h2>
 
-                    <p className="text-gray-500 mt-1">
+                    <p className="text-gray-500 mt-1 text-left">
 
-                      Linkedin update not submitted
+                      {
+                        update.project_name
+                      }
 
                     </p>
 
                   </div>
 
-                )
-              )
+                  {
 
-            }
+                    expandedId ===
+                    update.id
 
-          </div>
+                      ? <ChevronUp />
 
-        )
+                      : <ChevronDown />
 
-      }
+                  }
+
+                </button>
+
+                {
+
+                  expandedId ===
+                  update.id && (
+
+                    <div className="px-7 pb-7 border-t border-gray-100">
+
+                      <div className="space-y-6 mt-6">
+
+                        <div>
+
+                          <h3 className="font-semibold mb-2">
+
+                            Linkedin Post
+
+                          </h3>
+
+                          <a
+
+                            href={
+                              update.linkedin_url
+                            }
+
+                            target="_blank"
+
+                            rel="noreferrer"
+
+                            className="text-blue-600 flex items-center gap-2 hover:underline"
+
+                          >
+
+                            Open Link
+
+                            <ExternalLink
+                              size={16}
+                            />
+
+                          </a>
+
+                        </div>
+
+                        <div>
+
+                          <h3 className="font-semibold mb-2">
+
+                            Demo Link
+
+                          </h3>
+
+                          <a
+
+                            href={
+                              update.demo_link
+                            }
+
+                            target="_blank"
+
+                            rel="noreferrer"
+
+                            className="text-blue-600 flex items-center gap-2 hover:underline"
+
+                          >
+
+                            Open Link
+
+                            <ExternalLink
+                              size={16}
+                            />
+
+                          </a>
+
+                        </div>
+
+                        <div>
+
+                          <h3 className="font-semibold mb-2">
+
+                            Challenges
+
+                          </h3>
+
+                          <p className="text-gray-600">
+
+                            {
+                              update.challenges
+                            }
+
+                          </p>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  )
+
+                }
+
+              </div>
+
+            )
+          )
+
+        }
+
+      </div>
 
       {/* MODAL */}
 
@@ -1152,15 +1026,37 @@ function LinkedinUpdates() {
 
         showModal && (
 
-          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-6">
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
 
-            <div className="bg-white w-full max-w-xl rounded-3xl p-8">
+            <div className="bg-white rounded-3xl w-full max-w-2xl p-8 relative">
 
-              <h2 className="text-3xl font-semibold text-black mb-8">
+              <button
 
-                Add Linkedin Update
+                onClick={() =>
+                  setShowModal(
+                    false
+                  )
+                }
+
+                className="absolute top-6 right-6 w-10 h-10 rounded-xl hover:bg-gray-100 flex items-center justify-center"
+
+              >
+
+                <X size={18} />
+
+              </button>
+
+              <h2 className="text-3xl font-bold mb-2">
+
+                Weekly Linkedin Update
 
               </h2>
+
+              <p className="text-gray-500 mb-8">
+
+                Week {selectedWeek}
+
+              </p>
 
               <div className="space-y-5">
 
@@ -1168,7 +1064,7 @@ function LinkedinUpdates() {
 
                   type="text"
 
-                  placeholder="Linkedin post URL"
+                  placeholder="Linkedin Post URL"
 
                   value={linkedinUrl}
 
@@ -1178,7 +1074,7 @@ function LinkedinUpdates() {
                     )
                   }
 
-                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none hover:border-black focus:border-black transition-all"
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none"
 
                 />
 
@@ -1186,7 +1082,7 @@ function LinkedinUpdates() {
 
                   type="text"
 
-                  placeholder="Demo/project link"
+                  placeholder="Demo / GitHub Link"
 
                   value={demoLink}
 
@@ -1196,13 +1092,13 @@ function LinkedinUpdates() {
                     )
                   }
 
-                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none hover:border-black focus:border-black transition-all"
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none"
 
                 />
 
                 <textarea
 
-                  placeholder="Challenges faced"
+                  placeholder="Challenges faced this week"
 
                   value={challenges}
 
@@ -1212,43 +1108,23 @@ function LinkedinUpdates() {
                     )
                   }
 
-                  className="w-full h-32 border border-gray-200 rounded-2xl px-5 py-4 outline-none resize-none hover:border-black focus:border-black transition-all"
+                  className="w-full h-32 border border-gray-200 rounded-2xl px-5 py-4 resize-none outline-none"
 
                 />
 
-                <div className="flex gap-4">
+                <button
 
-                  <button
+                  onClick={
+                    submitUpdate
+                  }
 
-                    onClick={
-                      submitUpdate
-                    }
+                  className="w-full bg-black text-white py-4 rounded-2xl font-medium hover:opacity-90 transition-all"
 
-                    className="flex-1 bg-black text-white py-4 rounded-2xl font-medium hover:opacity-90 transition-all"
+                >
 
-                  >
+                  Submit Weekly Update
 
-                    Submit
-
-                  </button>
-
-                  <button
-
-                    onClick={() =>
-                      setShowModal(
-                        false
-                      )
-                    }
-
-                    className="flex-1 border border-gray-200 py-4 rounded-2xl font-medium hover:border-black transition-all"
-
-                  >
-
-                    Cancel
-
-                  </button>
-
-                </div>
+                </button>
 
               </div>
 
