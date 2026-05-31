@@ -8,6 +8,9 @@ import {
 import MainLayout
 from "./layouts/MainLayout";
 
+import { useAuth }
+from "./context/AuthContext";
+
 // PAGES
 
 import DailyUpdates
@@ -27,16 +30,16 @@ import "./App.css";
 
 function App() {
 
-  // USER
+  const { user: authUser } = useAuth();
 
-  const user =
+  const storedUser =
     JSON.parse(
       localStorage.getItem(
         "user"
       )
     ) || null;
 
-  // PROTECTED ROUTE
+  const user = authUser || storedUser;
 
   const ProtectedRoute =
     ({ children }) => {

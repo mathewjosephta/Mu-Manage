@@ -82,7 +82,7 @@ function Login() {
           })
         );
 
-        navigate("/");
+        navigate("/daily-updates", { replace: true });
 
       }
 
