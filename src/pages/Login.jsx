@@ -64,12 +64,16 @@ function Login() {
           .select("*")
           .eq("email", authEmail)
           .single();
-
+        console.log("BEFORE USER CHECK");
         if (userError || !userData) {
           console.log(userError);
           alert("User data not found for this account.");
           return;
         }
+
+        console.log("LOGIN SUCCESS");
+        console.log("SAVING USER");
+        console.log("AFTER USER CHECK");
 
         localStorage.setItem(
           "user",
@@ -82,7 +86,10 @@ function Login() {
           })
         );
 
+        console.log("USER SAVED");
+
         window.location.href = "/daily-updates";
+        console.log("REDIRECT CALLED");
 
       }
 
