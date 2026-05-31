@@ -27,136 +27,59 @@ function Login() {
   const handleLogin =
     async () => {
 
+      const emailTrimmed = email.trim();
+      const passwordTrimmed = password.trim();
+
+      if (!emailTrimmed || !passwordTrimmed) {
+        alert("Please enter both email and password.");
+        return;
+      }
+
       try {
 
         setLoading(true);
 
         const {
-
           data: loginData,
-
           error: loginError
-
         } = await supabase.auth
           .signInWithPassword({
-
-            email:
-              email.trim(),
-
-            password:
-              password.trim()
-
+            email: emailTrimmed,
+            password: passwordTrimmed
           });
 
-        // LOGIN ERROR
-
-        if (loginError) {
-
-          console.log(
-            loginError
-          );
-
-          alert(
-            loginError.message
-          );
-
+        if (loginError || !loginData?.user?.email) {
+          console.log(loginError);
+          alert(loginError?.message || "Login failed. Please check your credentials.");
           return;
-
         }
 
-        // DEBUG
-
-        console.log(
-          "AUTH EMAIL:"
-        );
-
-        console.log(
-          loginData.user.email
-        );
-
-        console.log(
-          "INPUT EMAIL:"
-        );
-
-        console.log(
-          email.trim()
-        );
-
-        // FETCH USER
+        const authEmail = loginData.user.email;
 
         const {
-
           data: userData,
-
           error: userError
-
         } = await supabase
-
           .from("users")
-
           .select("*")
-
-          .eq(
-            "email",
-            loginData.user.email
-          )
-
+          .eq("email", authEmail)
           .single();
 
-        console.log(
-          "USER DATA:"
-        );
-
-        console.log(
-          userData
-        );
-
-        console.log(
-          "USER ERROR:"
-        );
-
-        console.log(
-          userError
-        );
-
-        if (
-          userError ||
-          !userData
-        ) {
-
-          alert(
-            "User data not found"
-          );
-
+        if (userError || !userData) {
+          console.log(userError);
+          alert("User data not found for this account.");
           return;
-
         }
 
-        // SAVE USER
-
         localStorage.setItem(
-
           "user",
-
           JSON.stringify({
-
-            id:
-              userData.id,
-
-            name:
-              userData.name,
-
-            email:
-              userData.email,
-
-            role:
-              userData.role,
-
-            project_name:
-              userData.project_name
-
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            project_name: userData.project_name
           })
-
         );
 
         navigate("/");
@@ -166,10 +89,7 @@ function Login() {
       catch (err) {
 
         console.log(err);
-
-        alert(
-          "Login failed"
-        );
+        alert("Login failed");
 
       }
 
@@ -239,6 +159,7 @@ function Login() {
 
           <button
 
+            type="button"
             onClick={
               handleLogin
             }
