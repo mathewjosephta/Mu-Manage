@@ -82,7 +82,7 @@ function Login() {
           })
         );
 
-        navigate("/daily-updates", { replace: true });
+        window.location.href = "/daily-updates";
 
       }
 
