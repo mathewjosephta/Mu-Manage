@@ -28,7 +28,7 @@ function LinkedinUpdates() {
   const isPM =
     currentUser?.role === "pm";
 
-  // CURRENT WEEK (Updated: Change 1)
+  // CURRENT WEEK
   const getCurrentWeek =
     () => {
 
@@ -45,8 +45,9 @@ function LinkedinUpdates() {
       const dayOfMonth =
         now.getDate();
 
+      // Adjusting Sunday to be the end of the week cycle
       const offset =
-        firstDay.getDay();
+        firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
 
       return Math.ceil(
         (
@@ -60,45 +61,30 @@ function LinkedinUpdates() {
   const currentWeek =
     getCurrentWeek();
 
-  // TIMER (Updated: Optional Fix)
+  // TIMER
   const getWeekCountdown =
     () => {
 
       const now =
         new Date();
 
-      const week =
-        getCurrentWeek();
-
-      const firstDay =
-        new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          1
-        );
-
-      const startOffset =
-        firstDay.getDay();
-
-      const weekEndDay =
-        Math.min(
-          week * 7 - startOffset,
-          new Date(
-            now.getFullYear(),
-            now.getMonth() + 1,
-            0
-          ).getDate()
-        );
-
       const end =
-        new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          weekEndDay,
-          23,
-          59,
-          59
-        );
+        new Date(now);
+
+      // Calculates days remaining until Sunday night
+      const daysUntilSunday = 
+        now.getDay() === 0 ? 0 : 7 - now.getDay();
+
+      end.setDate(
+        now.getDate() + daysUntilSunday
+      );
+
+      end.setHours(
+        23,
+        59,
+        59,
+        999
+      );
 
       const diff =
         end - now;
@@ -241,19 +227,19 @@ function LinkedinUpdates() {
 
       setLoading(true);
 
-        let query =
-          supabase
+      let query =
+        supabase
 
-            .from("linkedin_updates")
+          .from("linkedin_updates")
 
-            .select("*")
+          .select("*")
 
-            .order(
-              "created_at",
-              {
-                ascending: false
-              }
-            );
+          .order(
+            "created_at",
+            {
+              ascending: false
+            }
+          );
 
       if (!isPM) {
 
@@ -678,7 +664,7 @@ function LinkedinUpdates() {
 
       </div>
 
-      {/* WEEK CARDS (Updated: Change 2) */}
+      {/* WEEK CARDS */}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
 
