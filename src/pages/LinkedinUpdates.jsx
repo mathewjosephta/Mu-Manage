@@ -14,11 +14,9 @@ import {
   ChevronUp
 } from "lucide-react";
 
-import { supabase }
-from "../services/supabase";
+import { supabase } from "../services/supabase";
 
-import * as XLSX
-from "xlsx";
+import * as XLSX from "xlsx";
 
 function LinkedinUpdates() {
 
@@ -30,42 +28,31 @@ function LinkedinUpdates() {
   const isPM =
     currentUser?.role === "pm";
 
-  // CURRENT WEEK
-
+  // CURRENT WEEK (Updated: Change 1)
   const getCurrentWeek =
     () => {
 
       const now =
         new Date();
 
-      const start =
+      const firstDay =
         new Date(
           now.getFullYear(),
-          0,
+          now.getMonth(),
           1
         );
 
-      const days =
-        Math.floor(
+      const dayOfMonth =
+        now.getDate();
 
-          (now - start) /
+      const offset =
+        firstDay.getDay();
 
-          (1000 * 60 * 60 * 24)
-
-        );
-
-      return Math.min(
-
-        Math.ceil(
-          (
-            days +
-            start.getDay() +
-            1
-          ) / 7
-        ),
-
-        4
-
+      return Math.ceil(
+        (
+          dayOfMonth +
+          offset
+        ) / 7
       );
 
     };
@@ -73,28 +60,45 @@ function LinkedinUpdates() {
   const currentWeek =
     getCurrentWeek();
 
-  // TIMER
-
+  // TIMER (Updated: Optional Fix)
   const getWeekCountdown =
     () => {
 
       const now =
         new Date();
 
+      const week =
+        getCurrentWeek();
+
+      const firstDay =
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          1
+        );
+
+      const startOffset =
+        firstDay.getDay();
+
+      const weekEndDay =
+        Math.min(
+          week * 7 - startOffset,
+          new Date(
+            now.getFullYear(),
+            now.getMonth() + 1,
+            0
+          ).getDate()
+        );
+
       const end =
-        new Date(now);
-
-      end.setDate(
-        now.getDate() +
-        (7 - now.getDay())
-      );
-
-      end.setHours(
-        23,
-        59,
-        59,
-        999
-      );
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          weekEndDay,
+          23,
+          59,
+          59
+        );
 
       const diff =
         end - now;
@@ -107,26 +111,20 @@ function LinkedinUpdates() {
 
       const hours =
         Math.floor(
-
           (
             diff %
             (1000 * 60 * 60 * 24)
           ) /
-
           (1000 * 60 * 60)
-
         );
 
       const minutes =
         Math.floor(
-
           (
             diff %
             (1000 * 60 * 60)
           ) /
-
           (1000 * 60)
-
         );
 
       return `${days}d ${hours}h ${minutes}m`;
@@ -243,19 +241,19 @@ function LinkedinUpdates() {
 
       setLoading(true);
 
-      let query =
-        supabase
+        let query =
+          supabase
 
-          .from("linkedin_updates")
+            .from("linkedin_updates")
 
-          .select("*")
+            .select("*")
 
-          .order(
-            "created_at",
-            {
-              ascending: false
-            }
-          );
+            .order(
+              "created_at",
+              {
+                ascending: false
+              }
+            );
 
       if (!isPM) {
 
@@ -680,13 +678,13 @@ function LinkedinUpdates() {
 
       </div>
 
-      {/* WEEK CARDS */}
+      {/* WEEK CARDS (Updated: Change 2) */}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
 
         {
 
-          [1,2,3,4].map((week) => {
+          [1,2,3,4,5].map((week) => {
 
             const current =
               week === currentWeek;
