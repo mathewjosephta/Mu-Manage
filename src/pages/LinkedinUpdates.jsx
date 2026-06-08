@@ -131,6 +131,11 @@ function LinkedinUpdates() {
     setSelectedWeek] =
       useState(currentWeek);
 
+  // Update 1: Added state for handling distinct submission targets
+  const [submissionWeek,
+    setSubmissionWeek] =
+      useState(currentWeek);
+
   const [loading,
     setLoading] =
       useState(true);
@@ -336,12 +341,13 @@ function LinkedinUpdates() {
   const submitUpdate =
     async () => {
 
+      // Update 2: Guard against choosing unauthorized upcoming weeks
       if (
-        selectedWeek !== currentWeek
+        submissionWeek > currentWeek
       ) {
 
         alert(
-          "Only current week submission allowed"
+          "Future week submission not allowed"
         );
 
         return;
@@ -364,6 +370,7 @@ function LinkedinUpdates() {
 
       try {
 
+        // Update 3: Checks for existing entries based on the submission target week
         const existing =
           updates.find(
             (item) =>
@@ -372,7 +379,7 @@ function LinkedinUpdates() {
               currentUser.email &&
 
               Number(item.week_number) ===
-              Number(selectedWeek)
+              Number(submissionWeek)
           );
 
         // UPDATE
@@ -412,6 +419,7 @@ function LinkedinUpdates() {
 
         else {
 
+          // Update 4: Omitted 'role' property mapping to fix DB insert error
           const {
             error
           } = await supabase
@@ -426,11 +434,8 @@ function LinkedinUpdates() {
               user_name:
                 currentUser.name,
 
-              role:
-                currentUser.role,
-
               week_number:
-                selectedWeek,
+                submissionWeek,
 
               linkedin_url:
                 linkedinUrl,
@@ -642,9 +647,10 @@ function LinkedinUpdates() {
 
               <button
 
-                onClick={() =>
-                  setShowModal(true)
-                }
+                onClick={() => {
+                  setSubmissionWeek(currentWeek); // Pre-selects active week on open
+                  setShowModal(true);
+                }}
 
                 className="bg-black text-white px-5 py-3 rounded-2xl flex items-center gap-2"
 
@@ -1003,11 +1009,58 @@ function LinkedinUpdates() {
 
               </h2>
 
+              {/* Update 5: Added dropdown picker block context inside selection layout */}
               <p className="text-gray-500 mb-8">
 
                 Week {selectedWeek}
 
               </p>
+
+              <div className="mb-5">
+
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+
+                  Select Week
+
+                </label>
+
+                <select
+
+                  value={submissionWeek}
+
+                  onChange={(e) =>
+                    setSubmissionWeek(
+                      Number(e.target.value)
+                    )
+                  }
+
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-4 outline-none"
+
+                >
+
+                  {
+
+                    Array.from(
+                      { length: currentWeek },
+                      (_, i) => i + 1
+                    ).map((week) => (
+
+                      <option
+                        key={week}
+                        value={week}
+                      >
+
+                        Week {week}
+
+                      </option>
+
+                    ))
+
+                  }
+
+                </select>
+
+              </div>
 
               {/* FORM */}
 
