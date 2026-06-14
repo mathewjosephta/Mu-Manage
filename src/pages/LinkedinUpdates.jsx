@@ -131,7 +131,6 @@ function LinkedinUpdates() {
     setSelectedWeek] =
       useState(currentWeek);
 
-  // Update 1: Added state for handling distinct submission targets
   const [submissionWeek,
     setSubmissionWeek] =
       useState(currentWeek);
@@ -341,7 +340,6 @@ function LinkedinUpdates() {
   const submitUpdate =
     async () => {
 
-      // Update 2: Guard against choosing unauthorized upcoming weeks
       if (
         submissionWeek > currentWeek
       ) {
@@ -370,7 +368,6 @@ function LinkedinUpdates() {
 
       try {
 
-        // Update 3: Checks for existing entries based on the submission target week
         const existing =
           updates.find(
             (item) =>
@@ -419,7 +416,6 @@ function LinkedinUpdates() {
 
         else {
 
-          // Update 4: Omitted 'role' property mapping to fix DB insert error
           const {
             error
           } = await supabase
@@ -444,7 +440,11 @@ function LinkedinUpdates() {
                 demoLink,
 
               challenges:
-                challenges
+                challenges,
+
+              // Added fields logic to satisfy the Postgres Not-Null Constraint constraint mapping
+              project_name:
+                currentUser.project || "General"
 
             }]);
 
@@ -648,7 +648,7 @@ function LinkedinUpdates() {
               <button
 
                 onClick={() => {
-                  setSubmissionWeek(currentWeek); // Pre-selects active week on open
+                  setSubmissionWeek(currentWeek);
                   setShowModal(true);
                 }}
 
@@ -1009,7 +1009,6 @@ function LinkedinUpdates() {
 
               </h2>
 
-              {/* Update 5: Added dropdown picker block context inside selection layout */}
               <p className="text-gray-500 mb-8">
 
                 Week {selectedWeek}
